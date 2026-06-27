@@ -1,0 +1,4382 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>🐺 Werwolf Online</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --night: #0d0d1a;
+    --deep: #13132a;
+    --card: #1a1a35;
+    --border: #2e2e5e;
+    --gold: #c9a227;
+    --gold-light: #e8c547;
+    --red: #8b1a1a;
+    --red-bright: #c0392b;
+    --green: #1a6b3a;
+    --green-bright: #27ae60;
+    --purple: #4a1a6b;
+    --text: #e8e0d0;
+    --muted: #8880a0;
+    --wolf-red: #7a0000;
+    --nav-h: 64px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html { height: 100%; }
+
+  body {
+    font-family: 'Crimson Text', serif;
+    background: var(--night);
+    color: var(--text);
+    min-height: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    /* Prevent iOS text size adjustment */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Village background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(139,26,26,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(74,26,107,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(13,13,26,0.8) 0%, transparent 100%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  #village-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  #village-bg svg {
+    width: 100%;
+    height: 100%;
+    opacity: 0.25;
+  }
+
+  /* ── SCREENS ── */
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 12px 12px calc(12px + var(--safe-bottom));
+    padding-top: calc(12px + var(--safe-top));
+    min-height: 100dvh;
+  }
+
+  /* Game screen has bottom nav, so needs extra bottom padding */
+  #screen-game .app-inner {
+    padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  }
+
+  /* ── HEADER ── */
+  .game-header {
+    text-align: center;
+    padding: 16px 0 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .game-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 8vw, 3.5rem);
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(201,162,39,0.4), 0 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 4px;
+  }
+
+  .game-subtitle {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+  .phase-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    color: var(--gold);
+    margin-top: 8px;
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    /* Minimum 44px touch target per Apple HIG */
+    min-height: 44px;
+    padding: 10px 20px;
+    border: 1px solid;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    border-color: var(--gold-light);
+    color: #1a1200;
+    font-weight: 700;
+  }
+
+  .btn-gold:active { filter: brightness(0.9); }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .btn-ghost:active { border-color: var(--gold); color: var(--gold); }
+
+  .btn-red {
+    background: var(--red);
+    border-color: var(--red-bright);
+    color: #ffd0d0;
+  }
+
+  .btn-red:active { background: var(--red-bright); }
+
+  .btn-green {
+    background: var(--green);
+    border-color: var(--green-bright);
+    color: #d0ffd8;
+  }
+
+  .btn-green:active { background: var(--green-bright); }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── INPUTS ── */
+  input, select, textarea {
+    background: var(--deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-family: 'Crimson Text', serif;
+    /* 16px prevents iOS zoom-on-focus */
+    font-size: 16px;
+    width: 100%;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  select option { background: var(--deep); }
+  textarea { resize: vertical; min-height: 60px; }
+
+  label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px;
+  }
+
+  .form-group { margin-bottom: 14px; }
+
+  /* ── ROLE REVEAL ── */
+  .role-reveal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    padding-bottom: calc(20px + var(--safe-bottom));
+    overflow-y: auto;
+  }
+
+  .role-reveal-inner {
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+    animation: revealPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes revealPop {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .role-card-big {
+    background: var(--card);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 24px 16px;
+    box-shadow: 0 0 60px rgba(201,162,39,0.3), 0 0 120px rgba(201,162,39,0.1);
+  }
+
+  .role-card-big .role-name {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 6vw, 2rem);
+    font-weight: 900;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .role-card-big .role-team {
+    font-size: 0.85rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .team-village { background: rgba(26,107,58,0.3); color: #7dffa0; border: 1px solid var(--green-bright); }
+  .team-wolf { background: rgba(122,0,0,0.4); color: #ff9090; border: 1px solid var(--red-bright); }
+  .team-solo { background: rgba(74,26,107,0.4); color: #d0a0ff; border: 1px solid #7b2fbe; }
+  .team-lovers { background: rgba(107,26,70,0.4); color: #ffb0d0; border: 1px solid #c0397b; }
+
+  .role-card-big .role-desc {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* ── PLAYER GRID ── */
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px;
+  }
+
+  .player-tile {
+    background: var(--deep);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+    transition: all 0.15s;
+    cursor: default;
+    position: relative;
+    user-select: none;
+    touch-action: manipulation;
+    /* Ensure minimum tap target */
+    min-height: 88px;
+  }
+
+  .player-tile.dead { opacity: 0.4; filter: grayscale(1); }
+
+  .player-tile.selectable {
+    cursor: pointer;
+    border-color: var(--gold);
+  }
+
+  .player-tile.selectable:active {
+    background: rgba(201,162,39,0.15);
+    transform: scale(0.96);
+  }
+
+  .player-tile.selected {
+    border-color: var(--gold-light);
+    background: rgba(201,162,39,0.2);
+    box-shadow: 0 0 12px rgba(201,162,39,0.3);
+  }
+
+  .player-tile .player-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--border);
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    border: 2px solid var(--border);
+    overflow: hidden;
+  }
+
+  .player-tile .player-avatar img {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+  }
+
+  .player-tile .player-name {
+    font-size: 0.72rem;
+    font-family: 'Cinzel', serif;
+    word-break: break-word;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .player-tile .mayor-crown {
+    position: absolute;
+    top: -6px; right: -6px;
+    font-size: 1.1rem;
+  }
+
+  .player-tile .dead-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(0,0,0,0.5);
+    border-radius: 10px;
+  }
+
+  /* ── CHAT ── */
+  .chat-area {
+    height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-msg {
+    padding: 5px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+  }
+
+  .chat-msg .msg-author {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .chat-msg.msg-system {
+    background: rgba(201,162,39,0.08);
+    border-left: 2px solid var(--gold);
+    color: var(--gold);
+    font-style: italic;
+    font-size: 0.85rem;
+  }
+
+  .chat-msg.msg-wolf { background: rgba(122,0,0,0.2); }
+  .chat-msg.msg-wolf .msg-author { color: #ff8080; }
+  .chat-msg.msg-normal .msg-author { color: var(--gold); }
+  .chat-msg.msg-normal { background: rgba(255,255,255,0.03); }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .chat-input-row input { flex: 1; }
+
+  /* Prevent chat input from being pushed up by keyboard on iOS */
+  .chat-input-row .btn {
+    flex-shrink: 0;
+    min-width: 48px;
+  }
+
+  /* ── VOTE ── */
+  .vote-timer {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    color: var(--red-bright);
+    text-align: center;
+    font-weight: 900;
+  }
+
+  .vote-bars { display: flex; flex-direction: column; gap: 6px; }
+
+  .vote-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+  }
+
+  .vote-bar-row .vb-name {
+    width: 90px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+
+  .vote-bar-track {
+    flex: 1;
+    height: 16px;
+    background: var(--deep);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .vote-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--red), var(--red-bright));
+    border-radius: 8px;
+    transition: width 0.5s;
+  }
+
+  .vote-count {
+    width: 24px;
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+
+  /* ── ROLE CONFIG ── */
+  .role-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .role-config-item {
+    background: var(--deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .role-config-item .rc-name {
+    font-size: 0.82rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rc-counter {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .rc-counter button {
+    /* Large touch target */
+    width: 36px;
+    height: 36px;
+    background: var(--border);
+    border: none;
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .rc-counter button:active { background: var(--gold); color: #000; }
+  .rc-counter .rc-val {
+    min-width: 28px;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  /* ── LOBBY ── */
+  .lobby-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .lobby-player {
+    background: var(--deep);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .lobby-player .lp-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+  }
+
+  .lobby-player .lp-host {
+    font-size: 0.7rem;
+    background: rgba(201,162,39,0.2);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-family: 'Cinzel', serif;
+    white-space: nowrap;
+  }
+
+  /* ── TOAST ── */
+  #toast-container {
+    position: fixed;
+    bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
+    right: 12px;
+    left: 12px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    align-items: flex-end;
+  }
+
+  .toast {
+    background: var(--card);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    color: var(--gold);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+    pointer-events: auto;
+    max-width: 320px;
+  }
+
+  .toast.toast-red { border-color: var(--red-bright); color: #ff9090; }
+  .toast.toast-green { border-color: var(--green-bright); color: #90ff90; }
+
+  @keyframes toastIn { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes toastOut { to { transform: translateX(110%); opacity: 0; } }
+
+  /* ── MAYOR ── */
+  .mayor-section {
+    background: rgba(201,162,39,0.08);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+
+  .mayor-section h3 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+
+  /* ── BADGES ── */
+  .badge {
+    font-size: 0.7rem;
+    font-family: 'Cinzel', serif;
+    padding: 3px 10px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+
+  .badge-day { background: rgba(230,200,50,0.2); color: #ffd700; border: 1px solid #ffd700; }
+  .badge-night { background: rgba(40,0,80,0.5); color: #b090ff; border: 1px solid #6040a0; }
+
+  /* ── UTILITIES ── */
+  .flex { display: flex; }
+  .flex-center { display: flex; align-items: center; justify-content: center; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .flex-wrap { flex-wrap: wrap; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mt-8 { margin-top: 8px; }
+  .text-center { text-align: center; }
+  .text-muted { color: var(--muted); font-style: italic; }
+  .text-gold { color: var(--gold); }
+  .text-sm { font-size: 0.85rem; }
+
+  /* ── TABS (scrollable on mobile) ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    touch-action: manipulation;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--deep); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── RESULT SCREEN ── */
+  .result-screen {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    padding: 20px;
+    padding-bottom: calc(20px + var(--safe-bottom));
+    overflow-y: auto;
+  }
+
+  .result-screen h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 7vw, 3.5rem);
+    font-weight: 900;
+  }
+
+  .result-wolf h1 { color: var(--red-bright); text-shadow: 0 0 30px rgba(192,57,43,0.6); }
+  .result-village h1 { color: var(--gold); text-shadow: 0 0 30px rgba(201,162,39,0.6); }
+  .result-solo h1 { color: #b090ff; text-shadow: 0 0 30px rgba(176,144,255,0.6); }
+
+  /* ── ROLE IMAGE PLACEHOLDER ── */
+  .role-img-placeholder {
+    width: 140px;
+    height: 140px;
+    border-radius: 12px;
+    background: var(--deep);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    margin: 0 auto 14px;
+  }
+
+  /* ── ROLE CHIP ── */
+  .role-chip {
+    font-size: 0.7rem;
+    font-family: 'Cinzel', serif;
+    padding: 3px 10px;
+    background: rgba(201,162,39,0.15);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  /* ── SPINNER ── */
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── NIGHT OVERLAY ── */
+  .night-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px;
+    padding-bottom: calc(20px + var(--safe-bottom));
+  }
+
+  /* ── BOTTOM NAVIGATION (mobile game screen) ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--nav-h) + var(--safe-bottom));
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0;
+    padding-bottom: var(--safe-bottom);
+    z-index: 500;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .bottom-nav-items {
+    display: flex;
+    width: 100%;
+    height: var(--nav-h);
+    align-items: center;
+  }
+
+  .bnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 100%;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    color: var(--muted);
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.3px;
+    transition: color 0.15s;
+    position: relative;
+  }
+
+  .bnav-item .bnav-icon { font-size: 1.4rem; line-height: 1; }
+  .bnav-item.active { color: var(--gold); }
+  .bnav-item.active::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 20%; right: 20%;
+    height: 2px;
+    background: var(--gold);
+    border-radius: 0 0 2px 2px;
+  }
+
+  .bnav-badge {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 20px);
+    width: 8px; height: 8px;
+    background: var(--red-bright);
+    border-radius: 50%;
+    display: none;
+  }
+
+  .bnav-badge.show { display: block; }
+
+  /* ── MOBILE PANELS (single-column within game screen) ── */
+  .game-pane { display: none; }
+  .game-pane.active { display: block; }
+
+  /* ── LOBBY LAYOUT ── */
+  .lobby-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── GAME LAYOUT (stacked on mobile, 2-col on desktop) ── */
+  .desktop-game-cols {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── DESKTOP OVERRIDES (≥640px) ── */
+  @media (min-width: 640px) {
+    .lobby-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 16px;
+    }
+
+    .bottom-nav { display: none; }
+
+    /* All panes visible on desktop */
+    .game-pane { display: block !important; }
+
+    #screen-game .app-inner { padding-bottom: 0; }
+
+    /* Two-column game layout on desktop */
+    .desktop-game-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .chat-area { height: 260px; }
+    .role-config-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .players-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+
+    #toast-container {
+      bottom: 20px;
+      left: auto;
+    }
+  }
+
+  /* ── JOIN CODE INPUT ── */
+  #join-code-input {
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    font-size: 16px;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ════════════════════════════════════════
+     NARRATOR / ERZÄHLER
+  ════════════════════════════════════════ */
+  .narrator-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    padding-bottom: calc(24px + var(--safe-bottom));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .narrator-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .narrator-box {
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .narrator-icon {
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+    display: block;
+    filter: drop-shadow(0 0 20px rgba(201,162,39,0.5));
+  }
+
+  .narrator-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(201,162,39,0.4);
+    margin-bottom: 10px;
+  }
+
+  .narrator-text {
+    font-family: 'Crimson Text', serif;
+    font-style: italic;
+    font-size: clamp(0.95rem, 3.5vw, 1.15rem);
+    color: var(--text);
+    line-height: 1.65;
+    min-height: 2.5em;
+  }
+
+  .narrator-countdown {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .narrator-countdown-bar {
+    width: 140px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .narrator-countdown-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: width 0.9s linear;
+  }
+
+  .narrator-phase-night .narrator-title { color: #b090ff; text-shadow: 0 0 20px rgba(140,80,255,0.5); }
+  .narrator-phase-wolf .narrator-title  { color: #ff7070; text-shadow: 0 0 20px rgba(200,0,0,0.5); }
+
+  /* Night step dots */
+  .night-step-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .night-step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.3s;
+  }
+
+  .night-step-dot.done   { background: var(--gold); }
+  .night-step-dot.active { background: var(--gold-light); box-shadow: 0 0 8px var(--gold); transform: scale(1.3); }
+
+  /* Narrator pulse in header */
+  .narrator-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    color: var(--muted);
+    justify-content: center;
+    margin-top: 6px;
+  }
+
+  .narrator-pulse {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: npulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes npulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.3; transform: scale(0.5); }
+  }
+
+  /* Action timer bar inside night-action-panel */
+  .action-timer-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .action-timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+  /* ════════════════════════════════════════
+     PRE-GAME INFO SCREEN
+  ════════════════════════════════════════ */
+  .pregame-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.96);
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .pregame-header {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 16px 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .pregame-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: 900;
+    color: var(--gold);
+    margin-bottom: 3px;
+  }
+  .pregame-header p { color: var(--muted); font-style: italic; font-size: 0.85rem; margin-bottom: 10px; }
+  .pregame-tabs { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .pregame-tabs::-webkit-scrollbar { display: none; }
+  .pregame-tab {
+    padding: 9px 15px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .pregame-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .pregame-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 13px 20px; }
+  .pregame-footer {
+    flex-shrink: 0;
+    padding: 10px 13px calc(10px + var(--safe-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--card);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .pregame-footer .pgf-hint { flex: 1; font-size: 0.75rem; color: var(--muted); font-style: italic; }
+
+  /* Night sequence */
+  .night-sequence-list { display: flex; flex-direction: column; gap: 6px; }
+  .night-seq-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 11px 12px; position: relative;
+  }
+  .night-seq-item.seq-wolf    { border-color: rgba(192,57,43,0.45); background: rgba(100,0,0,0.12); }
+  .night-seq-item.seq-special { border-color: rgba(74,26,107,0.5);  background: rgba(74,26,107,0.1); }
+  .night-seq-item.seq-inactive { opacity: 0.3; filter: grayscale(0.6); }
+  .seq-num { font-family: 'Cinzel', serif; font-size: 0.62rem; color: var(--muted); width: 16px; flex-shrink: 0; padding-top: 3px; text-align: right; }
+  .seq-icon { font-size: 1.4rem; flex-shrink: 0; line-height: 1; }
+  .seq-body { flex: 1; min-width: 0; }
+  .seq-title { font-family: 'Cinzel', serif; font-size: 0.84rem; font-weight: 700; color: var(--text); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .seq-cond { font-size: 0.68rem; color: var(--gold); background: rgba(201,162,39,0.1); border: 1px solid rgba(201,162,39,0.3); border-radius: 8px; padding: 1px 7px; font-style: italic; white-space: nowrap; }
+  .seq-cond.cond-night1 { color: #a0d0ff; background: rgba(100,160,255,0.1); border-color: rgba(100,160,255,0.3); }
+  .seq-action { font-size: 0.8rem; color: var(--text); line-height: 1.4; margin-top: 3px; }
+  .seq-desc   { font-size: 0.78rem; color: var(--muted); font-style: italic; line-height: 1.4; margin-top: 2px; }
+  .seq-timer  { font-family: 'Cinzel', serif; font-size: 0.62rem; color: var(--muted); flex-shrink: 0; align-self: flex-start; background: var(--deep); border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; margin-top: 2px; }
+  .seq-not-in-game { position: absolute; top: 7px; right: 9px; font-size: 0.6rem; font-family: 'Cinzel', serif; color: var(--muted); background: var(--deep); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; }
+  .seq-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 8px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
+  .seq-legend span { display: flex; align-items: center; gap: 5px; font-size: 0.71rem; font-family: 'Cinzel', serif; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .legend-dot.dot-normal  { background: var(--card); border: 1px solid var(--border); }
+  .legend-dot.dot-wolf    { background: rgba(100,0,0,0.4); border: 1px solid var(--red-bright); }
+  .legend-dot.dot-special { background: rgba(74,26,107,0.4); border: 1px solid #7b2fbe; }
+  .legend-dot.dot-off     { background: var(--deep); border: 1px solid var(--border); opacity: 0.35; }
+
+  /* Role cards */
+  .role-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 9px; }
+  @media (max-width: 380px) { .role-cards-grid { grid-template-columns: 1fr 1fr; } }
+  .role-info-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 10px; text-align: center; }
+  .role-info-card.rc-wolf   { border-color: rgba(192,57,43,0.4); background: rgba(100,0,0,0.1); }
+  .role-info-card.rc-solo   { border-color: rgba(74,26,107,0.5); background: rgba(74,26,107,0.08); }
+  .ric-emoji { font-size: 1.9rem; display: block; margin-bottom: 5px; }
+  .ric-name  { font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 700; color: var(--gold); margin-bottom: 3px; }
+  .ric-count { font-family: 'Cinzel', serif; font-size: 0.62rem; color: var(--muted); background: var(--deep); border-radius: 6px; padding: 2px 7px; margin-bottom: 5px; display: inline-block; }
+  .ric-team  { font-size: 0.64rem; font-family: 'Cinzel', serif; padding: 2px 8px; border-radius: 8px; display: inline-block; margin-bottom: 6px; }
+  .ric-village { background: rgba(26,107,58,0.25); color: #7dffa0; border: 1px solid rgba(39,174,96,0.35); }
+  .ric-wolf-t  { background: rgba(122,0,0,0.3);   color: #ff9090; border: 1px solid rgba(192,57,43,0.4); }
+  .ric-solo-t  { background: rgba(74,26,107,0.3); color: #d0a0ff; border: 1px solid rgba(123,47,190,0.4); }
+  .ric-desc    { font-size: 0.75rem; color: var(--muted); font-style: italic; line-height: 1.4; margin-bottom: 6px; }
+  .ric-ability { font-size: 0.73rem; color: var(--text); background: var(--deep); border-radius: 6px; padding: 5px 8px; line-height: 1.4; text-align: left; border: 1px solid var(--border); }
+  .ric-night-tag { font-size: 0.62rem; font-family: 'Cinzel', serif; color: #b090ff; background: rgba(74,26,107,0.2); border: 1px solid rgba(74,26,107,0.4); border-radius: 6px; padding: 2px 7px; display: inline-block; margin-bottom: 5px; }
+
+</style>
+</head>
+<body>
+
+<!-- Village SVG Background -->
+<div id="village-bg">
+<svg viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <!-- Sky gradient -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#050510"/>
+      <stop offset="100%" stop-color="#1a0a2e"/>
+    </linearGradient>
+    <radialGradient id="moon-glow" cx="50%" cy="20%" r="30%">
+      <stop offset="0%" stop-color="#ffe0a0" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="700" fill="url(#sky)"/>
+  <rect width="1200" height="700" fill="url(#moon-glow)"/>
+  <!-- Moon -->
+  <circle cx="600" cy="120" r="45" fill="#fff8e8" opacity="0.9"/>
+  <circle cx="620" cy="105" r="38" fill="#1a0a2e" opacity="0.9"/>
+  <!-- Stars -->
+  <circle cx="100" cy="60" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="200" cy="40" r="1" fill="white" opacity="0.6"/>
+  <circle cx="350" cy="80" r="2" fill="white" opacity="0.9"/>
+  <circle cx="450" cy="30" r="1" fill="white" opacity="0.7"/>
+  <circle cx="750" cy="50" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="900" cy="70" r="1" fill="white" opacity="0.6"/>
+  <circle cx="1050" cy="35" r="2" fill="white" opacity="0.7"/>
+  <circle cx="1150" cy="90" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="280" cy="110" r="1" fill="white" opacity="0.5"/>
+  <circle cx="820" cy="100" r="1.5" fill="white" opacity="0.6"/>
+  <!-- Ground -->
+  <rect x="0" y="580" width="1200" height="120" fill="#0d0d1a"/>
+  <!-- Far tree line -->
+  <rect x="0" y="470" width="1200" height="130" fill="#0a0a18" opacity="0.6"/>
+  <!-- Houses -->
+  <!-- House 1 left -->
+  <rect x="80" y="420" width="100" height="160" fill="#13132a"/>
+  <polygon points="80,420 180,420 130,350" fill="#1a0a2e"/>
+  <rect x="110" y="480" width="30" height="50" fill="#2a1a10"/>
+  <rect x="100" y="430" width="20" height="20" fill="#3a2a00" opacity="0.7"/>
+  <rect x="150" y="430" width="20" height="20" fill="#3a2a00" opacity="0.7"/>
+  <!-- Chimney smoke -->
+  <path d="M160 350 Q165 330 158 310 Q153 290 160 270" stroke="#332a3a" stroke-width="3" fill="none" opacity="0.5"/>
+  <!-- House 2 -->
+  <rect x="240" y="440" width="80" height="140" fill="#0f0f25"/>
+  <polygon points="240,440 320,440 280,375" fill="#150a2a"/>
+  <rect x="270" y="500" width="25" height="40" fill="#2a1a10"/>
+  <!-- Tower / Church -->
+  <rect x="380" y="350" width="70" height="230" fill="#13132a"/>
+  <polygon points="380,350 450,350 415,280" fill="#1a0a35"/>
+  <rect x="400" y="400" width="30" height="40" fill="#2a1a10"/>
+  <!-- Cross on church -->
+  <rect x="411" y="285" width="8" height="25" fill="#c9a227" opacity="0.6"/>
+  <rect x="405" y="293" width="20" height="5" fill="#c9a227" opacity="0.6"/>
+  <!-- House 3 -->
+  <rect x="830" y="430" width="90" height="150" fill="#13132a"/>
+  <polygon points="830,430 920,430 875,360" fill="#1a0a2e"/>
+  <rect x="855" y="490" width="28" height="45" fill="#2a1a10"/>
+  <!-- House 4 right -->
+  <rect x="990" y="415" width="110" height="165" fill="#0f0f25"/>
+  <polygon points="990,415 1100,415 1045,340" fill="#150a2a"/>
+  <rect x="1030" y="475" width="32" height="55" fill="#2a1a10"/>
+  <!-- Well in middle -->
+  <ellipse cx="600" cy="590" rx="30" ry="12" fill="#1a1a35" stroke="#2e2e5e" stroke-width="2"/>
+  <rect x="575" y="545" width="50" height="45" fill="#13132a" stroke="#2e2e5e" stroke-width="1"/>
+  <!-- Well roof -->
+  <polygon points="570,545 630,545 600,520" fill="#1a0a2e"/>
+  <!-- Trees -->
+  <rect x="700" y="480" width="12" height="100" fill="#0a0814"/>
+  <ellipse cx="706" cy="460" rx="28" ry="40" fill="#0a1208"/>
+  <rect x="740" y="490" width="10" height="90" fill="#0a0814"/>
+  <ellipse cx="745" cy="472" rx="22" ry="32" fill="#0a1208"/>
+  <rect x="150" y="490" width="10" height="90" fill="#0a0814"/>
+  <ellipse cx="155" cy="475" rx="20" ry="28" fill="#0a1208"/>
+  <!-- Fog ground -->
+  <rect x="0" y="560" width="1200" height="60" fill="#0d0d1a" opacity="0.7"/>
+  <!-- Path -->
+  <path d="M500 700 Q580 620 600 580 Q620 540 650 700" fill="#13132a" opacity="0.5"/>
+</svg>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- MAIN APP -->
+<div class="app" id="app">
+
+  <!-- SCREEN: Landing -->
+  <div id="screen-landing">
+    <div class="game-header">
+      <div class="game-title">🐺 WERWOLF</div>
+      <div class="game-subtitle">Das Dorf schläft... aber nicht alle.</div>
+      <div style="margin-top:8px;font-size:0.72rem;font-family:'Cinzel',serif" id="firebase-indicator" class="text-muted">Verbinde...</div>
+    </div>
+
+    <div class="panel" style="max-width:420px;margin:40px auto">
+      <div class="panel-title">Spiel beitreten oder erstellen</div>
+
+      <div class="form-group">
+        <label>Dein Name</label>
+        <input type="text" id="player-name-input" placeholder="Spielername..." maxlength="18"/>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="showCreateGame()" style="flex:1">
+          🏠 Spiel erstellen
+        </button>
+        <button class="btn btn-ghost" onclick="showJoinGame()" style="flex:1">
+          🚪 Beitreten
+        </button>
+      </div>
+    </div>
+
+    <div id="join-panel" style="display:none;max-width:420px;margin:0 auto">
+      <div class="panel">
+        <div class="panel-title">Spiel beitreten</div>
+        <div class="form-group">
+          <label>Spielcode</label>
+          <input type="text" id="join-code-input" placeholder="6-stelliger Code..." maxlength="6"/>
+        </div>
+        <button class="btn btn-gold" onclick="joinGame()" style="width:100%">Beitreten</button>
+      </div>
+    </div>
+
+    <div class="panel" style="max-width:420px;margin:16px auto 0;border-color:rgba(201,162,39,0.3);background:rgba(201,162,39,0.05)">
+      <div class="panel-title" style="font-size:0.85rem">⚙️ Firebase einrichten (einmalig)</div>
+      <div style="font-size:0.8rem;color:var(--muted);line-height:1.6">
+        <p style="margin-bottom:6px">Für echtes Online-Multiplayer brauchst du ein <strong style="color:var(--text)">kostenloses Firebase-Projekt</strong>:</p>
+        <ol style="padding-left:18px;display:flex;flex-direction:column;gap:4px">
+          <li>Gehe zu <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold)">console.firebase.google.com</a></li>
+          <li>Erstelle ein neues Projekt (kostenloser Spark-Plan)</li>
+          <li>Aktiviere <strong style="color:var(--text)">Realtime Database</strong> → Testmodus</li>
+          <li>Kopiere deine Konfiguration und ersetze <code style="color:var(--gold-light);background:var(--deep);padding:1px 5px;border-radius:3px">FIREBASE_CONFIG</code> oben im Code</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Lobby -->
+  <div id="screen-lobby" style="display:none">
+    <div class="game-header">
+      <div class="game-title">🐺 WERWOLF</div>
+      <div class="phase-indicator" style="gap:12px">
+        Spielcode: <strong id="lobby-code" style="letter-spacing:3px;color:var(--gold-light)"></strong>
+        <button onclick="shareGameCode()" class="btn btn-ghost" style="padding:4px 10px;font-size:0.75rem;min-height:32px;border-radius:6px">📤 Teilen</button>
+      </div>
+    </div>
+
+    <div class="lobby-layout">
+      <!-- Left col (desktop) / top (mobile): Players + Config -->
+      <div>
+        <div class="panel">
+          <div class="panel-title flex-between">
+            Spieler <span class="text-muted text-sm" id="lobby-count"></span>
+          </div>
+          <div class="lobby-list" id="lobby-players"></div>
+        </div>
+        <div class="panel" id="role-config-panel">
+          <div class="panel-title">Rollen konfigurieren</div>
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('dorf',this)">🏘️ Dorf</div>
+            <div class="tab" onclick="switchTab('wolf',this)">🐺 Wölfe</div>
+            <div class="tab" onclick="switchTab('spezial',this)">🎭 Spezial</div>
+          </div>
+          <div class="tab-content active" id="tab-dorf"><div class="role-config-grid" id="rc-dorf"></div></div>
+          <div class="tab-content" id="tab-wolf"><div class="role-config-grid" id="rc-wolf"></div></div>
+          <div class="tab-content" id="tab-spezial"><div class="role-config-grid" id="rc-spezial"></div></div>
+          <div class="mt-8 text-sm text-muted" id="rc-summary"></div>
+        </div>
+      </div>
+      <!-- Right col (desktop) / below (mobile): Chat + Start -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">Lobby-Chat</div>
+          <div class="chat-area" id="lobby-chat"></div>
+          <div class="chat-input-row">
+            <input type="text" id="lobby-chat-input" placeholder="Nachricht..." onkeydown="if(event.key==='Enter')sendLobbyChat()"/>
+            <button class="btn btn-ghost" onclick="sendLobbyChat()" style="min-width:48px">→</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-ghost" onclick="showPregameInfo(false)" style="min-width:48px;flex-shrink:0" title="Spielinfos">📖</button>
+          <button class="btn btn-gold" id="start-game-btn" onclick="startGame()" style="flex:1" disabled>🎮 Spiel starten</button>
+        </div>
+        <div class="text-muted text-sm text-center mt-8" id="start-hint">Mindestens 4 Spieler benötigt</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Game -->
+  <div id="screen-game" style="display:none">
+    <div class="app-inner">
+      <div class="game-header">
+        <div class="game-title">🐺 WERWOLF</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <div class="phase-indicator" id="game-phase-label">Tag 1</div>
+          <div class="phase-indicator" id="alive-count-label">Lebend: 0</div>
+          <div class="role-chip" id="my-role-chip"></div>
+        </div>
+        <div class="narrator-status" id="narrator-status" style="display:none">
+          <div class="narrator-pulse"></div>
+          <span id="narrator-status-text">Erzähler aktiv</span>
+        </div>
+      </div>
+
+      <div class="desktop-game-cols">
+        <!-- LEFT COL on desktop / Pane 1 on mobile: Spieler -->
+        <div>
+          <!-- MOBILE PANE: Spieler (default visible) -->
+          <div class="game-pane active" id="pane-players">
+            <!-- Mayor notice -->
+            <div class="mayor-section" id="mayor-section" style="display:none">
+              <h3>👑 Bürgermeister: <span id="current-mayor-name"></span></h3>
+              <div class="text-sm text-muted">Stimme zählt doppelt.</div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-title flex-between">
+                Spieler
+                <button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem;min-height:36px" id="vote-toggle-btn" onclick="toggleVote()">🗳️ Abstimmen</button>
+              </div>
+              <div class="players-grid" id="game-players"></div>
+            </div>
+
+            <!-- Voting Panel -->
+            <div class="panel" id="vote-panel" style="display:none">
+              <div class="panel-title flex-between">
+                Abstimmung <div class="vote-timer" id="vote-timer">60</div>
+              </div>
+              <div class="vote-bars mb-8" id="vote-bars"></div>
+              <div class="text-muted text-sm" id="vote-status"></div>
+            </div>
+
+            <!-- Night Action Panel -->
+            <div class="panel" id="night-action-panel" style="display:none">
+              <div class="panel-title" id="night-action-title">Nacht-Aktion</div>
+              <div class="action-timer-bar"><div class="action-timer-fill" id="action-timer-fill" style="width:100%"></div></div>
+              <div id="night-action-content"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL on desktop / Panes 2+3 on mobile: Chat + Role -->
+        <div>
+          <!-- MOBILE PANE: Chat -->
+          <div class="game-pane" id="pane-chat">
+            <div class="panel">
+              <div class="tabs">
+                <div class="tab active" onclick="switchTab('game-chat',this)">💬 Chat</div>
+                <div class="tab" onclick="switchTab('game-log',this)">📜 Verlauf</div>
+              </div>
+              <div class="tab-content active" id="tab-game-chat">
+                <div class="chat-area" id="game-chat"></div>
+                <div class="chat-input-row mt-8">
+                  <input type="text" id="game-chat-input" placeholder="Nachricht..." onkeydown="if(event.key==='Enter')sendGameChat()"/>
+                  <button class="btn btn-ghost" onclick="sendGameChat()" style="min-width:48px">→</button>
+                </div>
+              </div>
+              <div class="tab-content" id="tab-game-log">
+                <div class="chat-area" id="game-log" style="height:280px"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MOBILE PANE: Meine Rolle -->
+          <div class="game-pane" id="pane-role">
+            <div class="panel">
+              <div id="game-role-info" style="font-size:0.9rem;line-height:1.6"></div>
+            </div>
+
+            <!-- Host controls inside role pane on mobile -->
+            <div class="panel" id="host-controls" style="display:none">
+              <div class="panel-title">⚙️ Spielleiter (Übersteuerung)</div>
+              <div class="text-muted text-sm mb-8">Der Erzähler steuert das Spiel automatisch. Nur bei Bedarf manuell eingreifen.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                <button class="btn btn-ghost" onclick="goToNight()">🌙 Nacht</button>
+                <button class="btn btn-ghost" onclick="goToDay()">☀️ Tag</button>
+              </div>
+              <button class="btn btn-red" style="width:100%" onclick="endGameManual()">⛔ Spiel beenden</button>
+              <div class="mt-8" id="host-kill-control" style="display:none">
+                <div class="text-sm text-muted mb-8">Spieler töten (Nacht):</div>
+                <select id="kill-select"><option value="">— Auswählen —</option></select>
+                <button class="btn btn-red mt-8" onclick="hostKillPlayer()" style="width:100%">Töten</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /desktop-game-cols -->
+
+    </div><!-- /app-inner -->
+
+    <!-- BOTTOM NAV (mobile only) -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <div class="bottom-nav-items">
+        <div class="bnav-item active" id="bnav-players" onclick="switchPane('players')">
+          <div class="bnav-icon">👥</div>
+          <div>Spieler</div>
+          <div class="bnav-badge" id="badge-action"></div>
+        </div>
+        <div class="bnav-item" id="bnav-chat" onclick="switchPane('chat')">
+          <div class="bnav-icon">💬</div>
+          <div>Chat</div>
+          <div class="bnav-badge" id="badge-chat"></div>
+        </div>
+        <div class="bnav-item" id="bnav-role" onclick="switchPane('role')">
+          <div class="bnav-icon">🎭</div>
+          <div>Meine Rolle</div>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+</div><!-- /app -->
+
+<!-- PRE-GAME INFO OVERLAY -->
+<div class="pregame-overlay" id="pregame-overlay" style="display:none">
+  <div class="pregame-header">
+    <h2>📖 Spielinformationen</h2>
+    <p>Rollen und Nacht-Reihenfolge für diese Runde</p>
+    <div class="pregame-tabs" id="pregame-tabs">
+      <div class="pregame-tab active" onclick="switchPregameTab('sequence',this)">🌙 Nacht-Reihenfolge</div>
+      <div class="pregame-tab" onclick="switchPregameTab('roles',this)">🎭 Alle Rollen</div>
+      <div class="pregame-tab" onclick="switchPregameTab('rules',this)">📜 Spielregeln</div>
+    </div>
+  </div>
+
+  <div class="pregame-body">
+    <!-- Tab: Night sequence -->
+    <div id="pgTab-sequence" class="pregame-tab-content">
+      <div class="seq-legend">
+        <span><div class="legend-dot dot-normal"></div>Dorf</span>
+        <span><div class="legend-dot dot-wolf"></div>Werwölfe</span>
+        <span><div class="legend-dot dot-special"></div>Spezial/Solo</span>
+        <span><div class="legend-dot dot-off"></div>Nicht im Spiel</span>
+      </div>
+      <div class="night-sequence-list" id="pg-night-sequence"></div>
+    </div>
+
+    <!-- Tab: Roles -->
+    <div id="pgTab-roles" class="pregame-tab-content" style="display:none">
+      <div class="role-cards-grid" id="pg-role-cards"></div>
+    </div>
+
+    <!-- Tab: Rules -->
+    <div id="pgTab-rules" class="pregame-tab-content" style="display:none">
+      <div class="panel" style="margin-bottom:10px">
+        <div class="panel-title">🏆 Siegbedingungen</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.88rem;line-height:1.5">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:1.2rem">🏘️</span>
+            <div><strong style="color:var(--gold);font-family:'Cinzel',serif">Dorf</strong><br>Alle Werwölfe werden eliminiert. Spezialrollen können die Bedingungen ändern.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:1.2rem">🐺</span>
+            <div><strong style="color:#ff9090;font-family:'Cinzel',serif">Werwölfe</strong><br>Die Wölfe sind in der Überzahl – mindestens genauso viele wie alle anderen zusammen.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:1.2rem">🃏</span>
+            <div><strong style="color:#d0a0ff;font-family:'Cinzel',serif">Narr</strong><br>Wird vom Dorf gelyncht. Dann gewinnt der Narr – allein.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:1.2rem">💕</span>
+            <div><strong style="color:#ffb0d0;font-family:'Cinzel',serif">Liebespaar</strong><br>Beide Verliebten überleben bis zum Ende – sie gewinnen gemeinsam, unabhängig vom Team.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="font-size:1.2rem">🔪</span>
+            <div><strong style="color:#d0a0ff;font-family:'Cinzel',serif">Serienmörder / Brandstifter</strong><br>Eliminieren alle anderen. Gewinnen allein.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:10px">
+        <div class="panel-title">🌙 Nacht-Regeln</div>
+        <div style="font-size:0.88rem;line-height:1.6;color:var(--muted)">
+          <p style="margin-bottom:8px">Alle Spieler schließen die Augen. Der Erzähler ruft jede Rolle in der festgelegten Reihenfolge auf. Nur die gerufene Rolle handelt – alle anderen bleiben still.</p>
+          <p style="margin-bottom:8px">⏳ Jede Rolle hat ein Zeitfenster. Wer nicht rechtzeitig handelt, verliert seinen Zug für diese Nacht.</p>
+          <p>🐺 Werwölfe sehen sich gegenseitig und stimmen gemeinsam über ein Opfer ab. Bei Gleichstand entscheidet der Alphawolf (falls vorhanden), sonst der Zufall.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">☀️ Tag-Regeln</div>
+        <div style="font-size:0.88rem;line-height:1.6;color:var(--muted)">
+          <p style="margin-bottom:8px">Das Dorf diskutiert 90 Sekunden lang. Danach beginnt die Abstimmung (60 Sekunden).</p>
+          <p style="margin-bottom:8px">👑 Der Bürgermeister hat eine doppelte Stimme. Bei seinem Tod wird am nächsten Tag ein neuer gewählt.</p>
+          <p>💬 Werwölfe können tagsüber normal chatten – niemand weiß, wer sie sind. Nachts haben sie einen eigenen Wolf-Chat (nur für Wölfe sichtbar).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pregame-footer">
+    <div class="pgf-hint" id="pgf-hint">Alle Spieler sollten diese Infos lesen.</div>
+    <button class="btn btn-ghost" onclick="hidePregameInfo()" style="min-width:100px">← Zurück</button>
+    <button class="btn btn-gold" id="pgf-start-btn" onclick="confirmStartGame()" style="min-width:120px">Spiel starten 🎮</button>
+  </div>
+</div>
+
+<!-- NARRATOR OVERLAY -->
+<div class="narrator-overlay" id="narrator-overlay">
+  <div class="narrator-box" id="narrator-box">
+    <span class="narrator-icon" id="narrator-icon">📖</span>
+    <div class="narrator-title" id="narrator-title">Der Erzähler spricht...</div>
+    <div class="narrator-text"  id="narrator-text"></div>
+    <div class="night-step-bar" id="night-step-bar"></div>
+    <div class="narrator-countdown" id="narrator-countdown" style="display:none">
+      <div class="narrator-countdown-bar">
+        <div class="narrator-countdown-fill" id="narrator-countdown-fill" style="width:100%"></div>
+      </div>
+      <span id="narrator-countdown-secs"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE REVEAL OVERLAY -->
+<div class="role-reveal" id="role-reveal" style="display:none">
+  <div class="role-reveal-inner">
+    <div class="text-muted text-sm mb-8" style="font-family:'Cinzel',serif;letter-spacing:2px">DEINE ROLLE</div>
+    <div class="role-card-big">
+      <div id="reveal-img-wrap">
+        <div class="role-img-placeholder" id="reveal-emoji">🎭</div>
+      </div>
+      <div class="role-name" id="reveal-role-name"></div>
+      <div class="role-team" id="reveal-role-team"></div>
+      <div class="role-desc" id="reveal-role-desc"></div>
+    </div>
+    <button class="btn btn-gold" onclick="closeRoleReveal()">Verstanden</button>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div class="result-screen" id="result-screen" style="display:none">
+  <div id="result-content"></div>
+  <button class="btn btn-gold" onclick="backToLanding()">Zurück zum Menü</button>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// Uses a shared public project. For production replace with
+// your own Firebase project (free Spark plan is enough).
+// ═══════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCqeAf2ikHe5joEQ8M-mBkLYX-K8uKDfso",
+  authDomain: "werwolf-fgs41.firebaseapp.com",
+  databaseURL: "https://werwolf-fgs41-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "werwolf-fgs41",
+  storageBucket: "werwolf-fgs41.firebasestorage.app",
+  messagingSenderId: "162588463736",
+  appId: "1:162588463736:web:4d88894978f005898e938d",
+  measurementId: "G-27K2F0HQJV"
+};
+
+let firebaseApp  = null;
+let db           = null;
+let gameRef      = null;
+let firebaseReady = false;
+let fbUnsubscribe = null;  // Firebase listener unsubscribe
+
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) {
+      firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+    } else {
+      firebaseApp = firebase.app();
+    }
+    db = firebase.database();
+    firebaseReady = true;
+    console.log('[Firebase] Initialized ✓');
+    return true;
+  } catch(e) {
+    console.warn('[Firebase] Init failed, falling back to localStorage:', e);
+    firebaseReady = false;
+    return false;
+  }
+}
+
+// Call init immediately
+initFirebase();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// ROLE DEFINITIONS
+// ═══════════════════════════════════════════════════════════
+const ROLES = {
+  // DORF
+  dorfbewohner: {
+    name: 'Dorfbewohner',
+    team: 'village',
+    emoji: '🧑‍🌾',
+    tab: 'dorf',
+    min: 0, max: 15, default: 5,
+    desc: 'Ein normaler Bürger des Dorfes ohne besondere Fähigkeiten.',
+    nightAction: false
+  },
+  seherin: {
+    name: 'Seherin',
+    team: 'village',
+    emoji: '🔮',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'Kann jede Nacht die Rolle eines Spielers ansehen.',
+    nightAction: 'peek'
+  },
+  doktor: {
+    name: 'Doktor',
+    team: 'village',
+    emoji: '💉',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'Kann jede Nacht einen Spieler schützen, der nicht sterben kann.',
+    nightAction: 'protect'
+  },
+  hexe: {
+    name: 'Hexe',
+    team: 'village',
+    emoji: '🧪',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'Hat zwei Tränke (Heilung + Tod). Jeder nur einmal einsetzbar.',
+    nightAction: 'witch'
+  },
+  jaeger: {
+    name: 'Jäger',
+    team: 'village',
+    emoji: '🎯',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'Wenn er stirbt, kann er einen Spieler mitreißen.',
+    nightAction: false
+  },
+  amor: {
+    name: 'Amor',
+    team: 'village',
+    emoji: '💘',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'In der ersten Nacht verliebt er zwei Spieler. Das Paar gewinnt gemeinsam.',
+    nightAction: 'love'
+  },
+  verfluchter_dorfbewohner: {
+    name: 'Verfluchter',
+    team: 'village',
+    emoji: '😈',
+    tab: 'dorf',
+    min: 0, max: 2, default: 1,
+    desc: 'Wird von den Werwölfen angegriffen → wird selbst zum Werwolf.',
+    nightAction: false
+  },
+  detektiv: {
+    name: 'Detektiv',
+    team: 'village',
+    emoji: '🔍',
+    tab: 'dorf',
+    min: 0, max: 1, default: 0,
+    desc: 'Wählt 2 Spieler und erfährt, ob sie im gleichen Team sind.',
+    nightAction: 'detect'
+  },
+  dorfmatratze: {
+    name: 'Dorfmatratze',
+    team: 'village',
+    emoji: '💃',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'Schläft bei einem Spieler. Wird dieser angegriffen, stirbt sie statt ihm. Kann nicht zuhause sterben.',
+    nightAction: 'visit'
+  },
+  biestjaeger: {
+    name: 'Biestjäger',
+    team: 'village',
+    emoji: '🪤',
+    tab: 'dorf',
+    min: 0, max: 1, default: 0,
+    desc: 'Platziert eine Falle. Wird der Spieler in der nächsten Nacht angegriffen, stirbt ein Werwolf.',
+    nightAction: 'trap'
+  },
+  fuchs: {
+    name: 'Fuchs',
+    team: 'village',
+    emoji: '🦊',
+    tab: 'dorf',
+    min: 0, max: 1, default: 1,
+    desc: 'Nennt 2 Namen. Ist ein Werwolf dabei, erfährt er es. Sonst verliert er seine Kraft.',
+    nightAction: 'foxcheck'
+  },
+  // WERWÖLFE
+  werwolf: {
+    name: 'Werwolf',
+    team: 'wolf',
+    emoji: '🐺',
+    tab: 'wolf',
+    min: 1, max: 7, default: 2,
+    desc: 'Tötet jede Nacht gemeinsam mit den anderen Wölfen einen Spieler.',
+    nightAction: 'wolfvote'
+  },
+  alphawerwolf: {
+    name: 'Alphawolf',
+    team: 'wolf',
+    emoji: '🐺👑',
+    tab: 'wolf',
+    min: 0, max: 1, default: 0,
+    desc: 'Werwolf mit doppelter Stimme beim Wolfsvoting.',
+    nightAction: 'wolfvote'
+  },
+  // SPEZIAL
+  terrorist: {
+    name: 'Terrorist',
+    team: 'village',
+    emoji: '💣',
+    tab: 'spezial',
+    min: 0, max: 1, default: 1,
+    desc: 'Wenn er stirbt: Die Spieler links und rechts sterben ebenfalls.',
+    nightAction: false
+  },
+  bloody_mary: {
+    name: 'Bloody Mary',
+    team: 'village',
+    emoji: '🩸',
+    tab: 'spezial',
+    min: 0, max: 1, default: 1,
+    desc: 'Von Wölfen gefressen: wählt 2 Spieler, ist ein Wolf dabei stirbt dieser. Gelyncht: reißt einen Ankläger mit.',
+    nightAction: false
+  },
+  narr: {
+    name: 'Narr',
+    team: 'solo',
+    emoji: '🃏',
+    tab: 'spezial',
+    min: 0, max: 1, default: 1,
+    desc: 'Gewinnt, wenn das Dorf ihn lyncht.',
+    nightAction: false
+  },
+  serienmoerder: {
+    name: 'Serienmörder',
+    team: 'solo',
+    emoji: '🔪',
+    tab: 'spezial',
+    min: 0, max: 1, default: 0,
+    desc: 'Tötet jede Nacht einen Spieler. Kann nicht von Wölfen getötet werden. Gewinnt allein.',
+    nightAction: 'smkill'
+  },
+  brandstifter: {
+    name: 'Brandstifter',
+    team: 'solo',
+    emoji: '🔥',
+    tab: 'spezial',
+    min: 0, max: 1, default: 0,
+    desc: 'Übergießt Spieler mit Benzin oder zündet an. Gewinnt allein.',
+    nightAction: 'arson'
+  },
+  dorfaeltester: {
+    name: 'Dorfältester',
+    team: 'village',
+    emoji: '👴',
+    tab: 'spezial',
+    min: 0, max: 1, default: 1,
+    desc: 'Neutralisiert 2x pro Spiel den Effekt eines anderen Spielers für eine Nacht.',
+    nightAction: 'neutralize'
+  },
+  alte_schachtel: {
+    name: 'Alte Schachtel',
+    team: 'village',
+    emoji: '👵',
+    tab: 'spezial',
+    min: 0, max: 1, default: 0,
+    desc: 'Verhindert, dass ein Spieler abstimmt oder spricht.',
+    nightAction: 'silence'
+  },
+  schmied: {
+    name: 'Schmied',
+    team: 'village',
+    emoji: '🔨',
+    tab: 'spezial',
+    min: 0, max: 1, default: 0,
+    desc: 'Wirft einmal eine Münze: Kopf = Wölfe dürfen nochmals töten; Zahl = ein Spieler deckt Karte auf.',
+    nightAction: 'flip'
+  },
+  saeufer: {
+    name: 'Säufer',
+    team: 'village',
+    emoji: '🍺',
+    tab: 'spezial',
+    min: 0, max: 1, default: 0,
+    desc: '2x pro Spiel auf Sauftour: kann nicht von Wölfen getötet werden, muss sich zeigen.',
+    nightAction: 'drink'
+  },
+};
+
+// Cached AI-generated role images
+const roleImages = {};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let myId        = null;
+let myName      = '';
+let gameCode    = '';
+let isHost      = false;
+let gameState   = null;
+let pollInterval = null;   // unused with Firebase, kept for compat
+let voteInterval = null;
+let voteTimeLeft = 60;
+let hasVoted    = false;
+
+// localStorage fallback prefix (used when Firebase is unavailable)
+const STORE_PREFIX = 'werwolf_';
+
+// ── Firebase helpers ──────────────────────────────────────────
+function fbGamePath() {
+  return 'games/' + gameCode;
+}
+
+// Save gameState to Firebase (or localStorage fallback)
+function saveGame() {
+  gameState.lastUpdated = Date.now();
+  if (firebaseReady && db) {
+    db.ref(fbGamePath()).set(gameState).catch(e => {
+      console.warn('[FB] set failed:', e);
+      // Show error if it's a permission denied
+      if (e.code === 'PERMISSION_DENIED') {
+        toast('⚠️ Firebase: Regeln fehlen! Siehe Schritt 7 der Anleitung.', 'red');
+      }
+      localStorage.setItem(STORE_PREFIX + 'game_' + gameCode, JSON.stringify(gameState));
+    });
+  } else {
+    localStorage.setItem(STORE_PREFIX + 'game_' + gameCode, JSON.stringify(gameState));
+  }
+}
+
+// Load once (for join check) – returns a Promise
+function loadGameOnce() {
+  if (firebaseReady && db) {
+    return db.ref(fbGamePath()).get().then(snap => snap.exists() ? snap.val() : null);
+  } else {
+    const raw = localStorage.getItem(STORE_PREFIX + 'game_' + gameCode);
+    return Promise.resolve(raw ? JSON.parse(raw) : null);
+  }
+}
+
+// Subscribe to real-time updates
+function subscribeToGame(callback) {
+  // Detach any previous listener
+  if (fbUnsubscribe) { fbUnsubscribe(); fbUnsubscribe = null; }
+  if (pollInterval)  { clearInterval(pollInterval); pollInterval = null; }
+
+  if (firebaseReady && db) {
+    const ref = db.ref(fbGamePath());
+    const handler = ref.on('value', snap => {
+      if (snap.exists()) callback(snap.val());
+    }, err => {
+      console.warn('[FB] listener error, falling back to poll:', err);
+      startPollingFallback(callback);
+    });
+    fbUnsubscribe = () => ref.off('value', handler);
+    console.log('[Firebase] Subscribed to', fbGamePath());
+  } else {
+    startPollingFallback(callback);
+  }
+}
+
+function startPollingFallback(callback) {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(() => {
+    const raw = localStorage.getItem(STORE_PREFIX + 'game_' + gameCode);
+    if (raw) callback(JSON.parse(raw));
+  }, 1000);
+}
+
+// Compat shim – existing code calls loadGame() synchronously in some places.
+// We replace those call-sites below. This shim returns the cached gameState.
+function loadGame() { return gameState; }
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+function genCode() {
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+function genId() {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' toast-'+type : '');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function showScreen(id) {
+  ['screen-landing','screen-lobby','screen-game'].forEach(s => {
+    document.getElementById(s).style.display = s===id ? '' : 'none';
+  });
+  if (id === 'screen-game') {
+    switchPane('players');
+  }
+}
+
+function switchTab(id, el) {
+  const container = el.closest('.panel') || el.closest('.app');
+  container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  container.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.remove('active');
+    if (c.id === 'tab-'+id) c.classList.add('active');
+  });
+}
+
+let currentPane = 'players';
+let chatUnread = 0;
+let actionPending = false;
+
+function switchPane(name) {
+  currentPane = name;
+  ['players','chat','role'].forEach(p => {
+    const pane = document.getElementById('pane-'+p);
+    const nav = document.getElementById('bnav-'+p);
+    if (pane) pane.classList.toggle('active', p === name);
+    if (nav) nav.classList.toggle('active', p === name);
+  });
+  if (name === 'chat') {
+    chatUnread = 0;
+    const badge = document.getElementById('badge-chat');
+    if (badge) badge.classList.remove('show');
+    // Scroll chat to bottom
+    const chatEl = document.getElementById('game-chat');
+    if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+  }
+  if (name === 'players') {
+    actionPending = false;
+    const badge = document.getElementById('badge-action');
+    if (badge) badge.classList.remove('show');
+  }
+}
+
+function markChatUnread() {
+  if (currentPane !== 'chat') {
+    chatUnread++;
+    const badge = document.getElementById('badge-chat');
+    if (badge) badge.classList.add('show');
+  }
+}
+
+function markActionBadge(show) {
+  actionPending = show;
+  const badge = document.getElementById('badge-action');
+  if (badge) badge.classList.toggle('show', show);
+}
+
+// ═══════════════════════════════════════════════════════════
+// GAME STATE HELPERS
+// ═══════════════════════════════════════════════════════════
+// saveGame() and loadGame() are defined above in the Firebase section
+
+function getMe() {
+  return gameState?.players?.find(p => p.id === myId);
+}
+
+function getAlive() {
+  return gameState?.players?.filter(p => p.alive) || [];
+}
+
+function isMyTurn() {
+  const me = getMe();
+  if (!me || !me.alive) return false;
+  const role = ROLES[me.role];
+  return role?.nightAction !== false && gameState?.phase === 'night';
+}
+
+// ═══════════════════════════════════════════════════════════
+// LANDING
+// ═══════════════════════════════════════════════════════════
+function showJoinGame() {
+  const jp = document.getElementById('join-panel');
+  jp.style.display = jp.style.display === 'none' ? '' : 'none';
+}
+
+function showCreateGame() {
+  const name = document.getElementById('player-name-input').value.trim();
+  if (!name) { toast('Bitte Namen eingeben', 'red'); return; }
+  myName = name;
+  myId = genId();
+  isHost = true;
+  gameCode = genCode();
+
+  const roleConfig = {};
+  Object.keys(ROLES).forEach(k => { roleConfig[k] = ROLES[k].default; });
+
+  gameState = {
+    code: gameCode,
+    phase: 'lobby',
+    day: 0,
+    players: [{
+      id: myId,
+      name: myName,
+      role: null,
+      alive: true,
+      isHost: true,
+      isMayor: false,
+      silenced: false,
+      inLove: false,
+      lovePartner: null,
+      protected: false,
+      trapped: false,
+      cursed: false,
+    }],
+    roleConfig,
+    mayor: null,
+    chat: [],
+    log: [],
+    wolfTarget: null,
+    nightActions: {},
+    votes: {},
+    voteActive: false,
+    voteDeadline: null,
+    pendingKills: [],
+    witchUsedHeal: false,
+    witchUsedKill: false,
+    foxActive: true,
+    dorfaeltesterUsed: 0,
+    lastUpdated: Date.now()
+  };
+
+  document.getElementById('lobby-code').textContent = gameCode;
+  showConnectionStatus('Erstelle Spiel...');
+
+  // Subscribe first so we get our own write back
+  subscribeToGame(onRemoteUpdate);
+
+  // Save to Firebase and wait for confirmation before showing lobby
+  gameState.lastUpdated = Date.now();
+  const savePromise = (firebaseReady && db)
+    ? db.ref(fbGamePath()).set(gameState)
+    : Promise.resolve(localStorage.setItem(STORE_PREFIX + 'game_' + gameCode, JSON.stringify(gameState)));
+
+  savePromise
+    .then(() => {
+      hideConnectionStatus();
+      buildRoleConfig();
+      renderLobby();
+      showScreen('screen-lobby');
+      toast('Spiel erstellt! Code: ' + gameCode, 'green');
+    })
+    .catch(e => {
+      hideConnectionStatus();
+      console.error('[FB] create failed:', e);
+      // Fall back to localStorage
+      localStorage.setItem(STORE_PREFIX + 'game_' + gameCode, JSON.stringify(gameState));
+      buildRoleConfig();
+      renderLobby();
+      showScreen('screen-lobby');
+      toast('Spiel erstellt (offline): ' + gameCode, 'green');
+    });
+}
+
+function joinGame() {
+  const name = document.getElementById('player-name-input').value.trim();
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (!name) { toast('Bitte Namen eingeben', 'red'); return; }
+  if (code.length < 4) { toast('Bitte Spielcode eingeben', 'red'); return; }
+
+  myName = name;
+  myId = genId();
+  isHost = false;
+  gameCode = code;
+
+  showConnectionStatus('Suche Spiel...');
+
+  loadGameOnce().then(gs => {
+    hideConnectionStatus();
+    if (!gs) { toast('Kein Spiel mit diesem Code gefunden', 'red'); return; }
+    if (gs.phase !== 'lobby') { toast('Spiel hat bereits begonnen', 'red'); return; }
+
+    gameState = gs;
+    // Check name collision
+    if (gameState.players.some(p => p.name === myName)) {
+      myName = myName + Math.floor(Math.random()*99+1);
+    }
+    gameState.players.push({
+      id: myId,
+      name: myName,
+      role: null,
+      alive: true,
+      isHost: false,
+      isMayor: false,
+      silenced: false,
+      inLove: false,
+      lovePartner: null,
+      protected: false,
+      trapped: false,
+      cursed: false,
+    });
+    addLog(`${myName} ist dem Spiel beigetreten.`);
+    saveGame();
+
+    subscribeToGame(onRemoteUpdate);
+
+    document.getElementById('lobby-code').textContent = gameCode;
+    buildRoleConfig();
+    renderLobby();
+    showScreen('screen-lobby');
+    toast('Dem Spiel beigetreten!', 'green');
+  }).catch(e => {
+    hideConnectionStatus();
+    toast('Verbindungsfehler: ' + e.message, 'red');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// REAL-TIME UPDATE HANDLER (Firebase callback)
+// ═══════════════════════════════════════════════════════════
+
+// Called every time Firebase pushes an update
+function onRemoteUpdate(fresh) {
+  if (!fresh) return;
+  const prevPhase   = gameState?.phase;
+  const prevDay     = gameState?.day;
+  const prevChatLen = gameState?.chat?.length || 0;
+
+  gameState = fresh;
+
+  // Badge new chat messages from others
+  const newChatLen = gameState.chat?.length || 0;
+  if (newChatLen > prevChatLen && gameState.phase !== 'lobby') {
+    const newMsg = gameState.chat[gameState.chat.length - 1];
+    if (newMsg && newMsg.author !== myName) markChatUnread();
+  }
+
+  if (gameState.phase === 'lobby') {
+    renderLobby();
+  } else if (['day','night','mayorvote'].includes(gameState.phase)) {
+    renderGame();
+    if (prevPhase !== gameState.phase || prevDay !== gameState.day) {
+      onPhaseChange(prevPhase);
+    }
+    if (gameState.voteActive) {
+      updateVoteUI();
+      if (!isHost && !voteInterval) startVoteTimer();
+    }
+    if (gameState.phase === 'mayorvote' && !gameState.votes?.['mayor_'+myId]) {
+      const panel = document.getElementById('night-action-panel');
+      if (panel && panel.style.display === 'none') {
+        const me = getMe();
+        if (me && me.alive) startMayorVote();
+      }
+    }
+  } else if (gameState.phase === 'ended') {
+    showResult(gameState.winner);
+  }
+}
+
+// Kept for compatibility (narrator uses this name in a few places)
+function poll() { /* no-op: Firebase handles updates via onRemoteUpdate */ }
+function startPolling() { /* no-op: subscribeToGame() replaces this */ }
+
+function onPhaseChange(prev) {
+  const me = getMe();
+  if (gameState.phase === 'night') {
+    showNightActionIfNeeded();
+  }
+  if (gameState.phase === 'day' && prev === 'night') {
+    // Show what happened
+    renderDeathNews();
+  }
+  if (gameState.phase === 'mayorvote') {
+    if (me && me.alive) startMayorVote();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ROLE CONFIG UI
+// ═══════════════════════════════════════════════════════════
+function buildRoleConfig() {
+  ['dorf','wolf','spezial'].forEach(tab => {
+    const el = document.getElementById('rc-'+tab);
+    el.innerHTML = '';
+  });
+
+  Object.keys(ROLES).forEach(key => {
+    const role = ROLES[key];
+    const val = gameState.roleConfig[key] ?? role.default;
+    const div = document.createElement('div');
+    div.className = 'role-config-item';
+    div.innerHTML = `
+      <span style="font-size:1.2rem">${role.emoji}</span>
+      <span class="rc-name">${role.name}</span>
+      <div class="rc-counter">
+        <button onclick="changeRoleCount('${key}',-1)">−</button>
+        <span class="rc-val" id="rcv-${key}">${val}</span>
+        <button onclick="changeRoleCount('${key}',1)">+</button>
+      </div>
+    `;
+    const container = document.getElementById('rc-'+role.tab);
+    if (container) container.appendChild(div);
+  });
+
+  updateRoleSummary();
+}
+
+function changeRoleCount(key, delta) {
+  if (!isHost) return;
+  const role = ROLES[key];
+  const cur = gameState.roleConfig[key] ?? role.default;
+  const nv = Math.max(role.min, Math.min(role.max, cur + delta));
+  gameState.roleConfig[key] = nv;
+  document.getElementById('rcv-'+key).textContent = nv;
+  saveGame();
+  updateRoleSummary();
+}
+
+function updateRoleSummary() {
+  const total = Object.keys(ROLES).reduce((s,k) => s + (gameState.roleConfig[k]||0), 0);
+  const el = document.getElementById('rc-summary');
+  if (el) el.textContent = `Gesamt: ${total} Rolle(n) für ${gameState.players.length} Spieler`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOBBY RENDER
+// ═══════════════════════════════════════════════════════════
+function renderLobby() {
+  const el = document.getElementById('lobby-players');
+  el.innerHTML = '';
+  gameState.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'lobby-player';
+    div.innerHTML = `
+      <div class="flex gap-8">
+        <span style="font-size:1.5rem">🧑</span>
+        <span class="lp-name">${p.name}</span>
+      </div>
+      ${p.isHost ? '<span class="lp-host">Host</span>' : ''}
+    `;
+    el.appendChild(div);
+  });
+
+  document.getElementById('lobby-count').textContent = `${gameState.players.length} Spieler`;
+
+  const minPlayers = 4;
+  const startBtn = document.getElementById('start-game-btn');
+  const startHint = document.getElementById('start-hint');
+  const canStart = gameState.players.length >= minPlayers;
+
+  startBtn.disabled = !isHost || !canStart;
+  startBtn.style.display = isHost ? '' : 'none';
+  document.getElementById('role-config-panel').style.display = isHost ? '' : 'none';
+  if (startHint) {
+    startHint.textContent = !isHost ? 'Warte auf den Host...' : (!canStart ? `Mindestens ${minPlayers} Spieler benötigt` : '');
+  }
+
+  // Render chat
+  renderChat('lobby-chat', gameState.chat?.filter(m => m.channel === 'lobby') || []);
+  updateRoleSummary();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════
+function renderChat(containerId, messages) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const wasBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 40;
+  el.innerHTML = '';
+  messages.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + (m.type || 'msg-normal');
+    if (m.type === 'msg-system') {
+      div.innerHTML = `<em>${m.text}</em>`;
+    } else {
+      div.innerHTML = `<div class="msg-author">${m.author || '?'}</div><div>${m.text}</div>`;
+    }
+    el.appendChild(div);
+  });
+  if (wasBottom) el.scrollTop = el.scrollHeight;
+}
+
+function sendChat(channel, text, type='msg-normal') {
+  if (!text.trim()) return;
+  if (!gameState.chat) gameState.chat = [];
+  const me = getMe();
+  if (me?.silenced && channel !== 'wolf') {
+    toast('Du wurdest zum Schweigen gebracht!', 'red');
+    return;
+  }
+  gameState.chat.push({
+    channel,
+    type,
+    author: myName,
+    text: text.trim(),
+    ts: Date.now()
+  });
+  saveGame();
+  // Mark unread if not on chat pane
+  markChatUnread();
+}
+
+function sendLobbyChat() {
+  const inp = document.getElementById('lobby-chat-input');
+  sendChat('lobby', inp.value);
+  inp.value = '';
+  renderLobby();
+}
+
+function sendGameChat() {
+  const inp = document.getElementById('game-chat-input');
+  const me = getMe();
+  const isWolf = me?.role === 'werwolf' || me?.role === 'alphawerwolf';
+  const channel = (gameState.phase === 'night' && isWolf) ? 'wolf' : 'day';
+  sendChat(channel, inp.value, isWolf && gameState.phase === 'night' ? 'msg-wolf' : 'msg-normal');
+  inp.value = '';
+  renderGame();
+}
+
+function addLog(msg) {
+  if (!gameState.log) gameState.log = [];
+  gameState.log.push({ text: msg, ts: Date.now() });
+}
+
+// ═══════════════════════════════════════════════════════════
+// START GAME
+// ═══════════════════════════════════════════════════════════
+function startGame() {
+  if (!isHost) return;
+  const players = gameState.players;
+  if (players.length < 4) { toast('Mindestens 4 Spieler benötigt', 'red'); return; }
+  // Show pre-game info overlay first; actual start happens in confirmStartGame()
+  showPregameInfo(true);
+}
+
+function confirmStartGame() {
+  hidePregameInfo();
+  const players = gameState.players;
+  if (players.length < 4) { toast('Mindestens 4 Spieler benötigt', 'red'); return; }
+
+  // Build role pool
+  const pool = [];
+  Object.keys(gameState.roleConfig).forEach(key => {
+    const count = gameState.roleConfig[key] || 0;
+    for (let i = 0; i < count; i++) pool.push(key);
+  });
+
+  // Shuffle & assign
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  players.forEach((p, i) => {
+    p.role = shuffled[i] || 'dorfbewohner';
+    p.alive = true;
+    p.silenced = false;
+    p.inLove = false;
+    p.lovePartner = null;
+    p.protected = false;
+    p.trapped = false;
+  });
+
+  gameState.phase = 'night';
+  gameState.day = 1;
+  gameState.wolfTarget = null;
+  gameState.nightActions = {};
+  gameState.votes = {};
+  gameState.voteActive = false;
+  gameState.pendingKills = [];
+  gameState.witchUsedHeal = false;
+  gameState.witchUsedKill = false;
+  gameState.foxActive = true;
+  gameState.dorfaeltesterUsed = 0;
+  gameState.mayor = null;
+
+  addLog('Das Spiel hat begonnen!');
+
+  // Mayor election first
+  gameState.phase = 'mayorvote';
+  saveGame();
+  renderGame();
+  showScreen('screen-game');
+
+  // Kick off narrator (host only)
+  if (isHost) {
+    setTimeout(startNarrator, 800);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAYOR VOTE
+// ═══════════════════════════════════════════════════════════
+function startMayorVote() {
+  switchPane('players');
+  const panel = document.getElementById('night-action-panel');
+  const title = document.getElementById('night-action-title');
+  const content = document.getElementById('night-action-content');
+  panel.style.display = '';
+  title.textContent = '👑 Bürgermeisterwahl';
+  markActionBadge(true);
+
+  content.innerHTML = `
+    <div class="text-muted text-sm mb-8">Wähle deinen Bürgermeister!</div>
+    <div class="role-config-grid" style="grid-template-columns:1fr 1fr">
+      ${getAlive().map(p => `
+        <button class="btn btn-ghost" style="justify-content:flex-start;gap:8px" onclick="voteMayor('${p.id}')">
+          🧑 ${p.name}
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function voteMayor(targetId) {
+  if (!gameState.votes) gameState.votes = {};
+  if (gameState.votes['mayor_' + myId]) return; // already voted
+  const fresh = loadGame();
+  gameState = fresh;
+  if (!gameState.votes) gameState.votes = {};
+  gameState.votes['mayor_' + myId] = targetId;
+  saveGame();
+  toast('Stimme abgegeben!');
+  // Close the panel for this player
+  document.getElementById('night-action-panel').style.display = 'none';
+  markActionBadge(false);
+  // Narrator (host) auto-resolves at the right time via its own timer
+}
+
+function countMayorVotes() {
+  const fresh = loadGame();
+  gameState = fresh;
+  const counts = {};
+  Object.keys(gameState.votes).filter(k => k.startsWith('mayor_')).forEach(k => {
+    const v = gameState.votes[k];
+    counts[v] = (counts[v]||0) + 1;
+  });
+  let winner = null, max = 0;
+  Object.keys(counts).forEach(id => { if (counts[id] > max) { max = counts[id]; winner = id; } });
+  if (!winner) winner = gameState.players[0].id;
+
+  gameState.mayor = winner;
+  const mayorPlayer = gameState.players.find(p => p.id === winner);
+  if (mayorPlayer) mayorPlayer.isMayor = true;
+  gameState.players.forEach(p => { if (p.id !== winner) p.isMayor = false; });
+
+  addLog(`👑 ${mayorPlayer?.name || '?'} wurde zum Bürgermeister gewählt!`);
+  gameState.phase = 'night';
+  gameState.votes = {};
+  saveGame();
+  document.getElementById('night-action-panel').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// GAME RENDER
+// ═══════════════════════════════════════════════════════════
+function renderGame() {
+  if (!gameState) return;
+  const me = getMe();
+  if (!me) return;
+
+  // Phase label
+  const phaseLabel = document.getElementById('game-phase-label');
+  if (gameState.phase === 'day') phaseLabel.innerHTML = `<span class="badge badge-day">☀️ Tag ${gameState.day}</span>`;
+  else if (gameState.phase === 'night') phaseLabel.innerHTML = `<span class="badge badge-night">🌙 Nacht ${gameState.day}</span>`;
+  else if (gameState.phase === 'mayorvote') phaseLabel.innerHTML = `<span class="badge badge-day">👑 Bürgermeisterwahl</span>`;
+
+  // Alive count
+  document.getElementById('alive-count-label').textContent = `Lebend: ${getAlive().length}`;
+
+  // My role chip
+  const chip = document.getElementById('my-role-chip');
+  const myRole = ROLES[me.role];
+  chip.textContent = myRole ? `${myRole.emoji} ${myRole.name}` : '';
+  if (me.isMayor) chip.textContent = '👑 ' + chip.textContent;
+
+  // Mayor section
+  const mayorSection = document.getElementById('mayor-section');
+  const mayorPlayer = gameState.players.find(p => p.id === gameState.mayor);
+  if (mayorPlayer && mayorPlayer.alive) {
+    mayorSection.style.display = '';
+    document.getElementById('current-mayor-name').textContent = mayorPlayer.name;
+  } else {
+    mayorSection.style.display = 'none';
+  }
+
+  // Players grid
+  renderPlayersGrid();
+
+  // Chat (only show messages the player can see)
+  const isWolf = me.role === 'werwolf' || me.role === 'alphawerwolf';
+  const chatMsgs = gameState.chat?.filter(m =>
+    m.channel === 'day' ||
+    m.channel === 'lobby' ||
+    (m.channel === 'wolf' && isWolf)
+  ) || [];
+  renderChat('game-chat', chatMsgs);
+
+  // Badge for new chat when not on chat pane
+  if (currentPane !== 'chat' && chatMsgs.length > 0) {
+    const badge = document.getElementById('badge-chat');
+    if (badge) badge.classList.add('show');
+  }
+
+  // Log
+  renderLog();
+
+  // Role info
+  renderRoleInfo(me);
+
+  // Vote toggle button – visible only for host on day phase
+  const voteToggle = document.getElementById('vote-toggle-btn');
+  if (voteToggle) {
+    voteToggle.style.display = (isHost && gameState.phase === 'day') ? '' : 'none';
+    voteToggle.textContent = gameState.voteActive ? '⛔ Abstimmung stopp' : '🗳️ Abstimmen';
+  }
+
+  // Host controls
+  const hc = document.getElementById('host-controls');
+  if (hc) hc.style.display = isHost ? '' : 'none';
+  if (isHost) {
+    const killSelect = document.getElementById('kill-select');
+    if (killSelect) {
+      killSelect.innerHTML = '<option value="">— Auswählen —</option>' +
+        getAlive().map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+    const hkc = document.getElementById('host-kill-control');
+    if (hkc) hkc.style.display = gameState.phase === 'night' ? '' : 'none';
+  }
+}
+
+function renderPlayersGrid() {
+  const container = document.getElementById('game-players');
+  container.innerHTML = '';
+  const me = getMe();
+  const isWolf = me?.role === 'werwolf' || me?.role === 'alphawerwolf';
+
+  gameState.players.forEach(p => {
+    const role = ROLES[p.role];
+    const tile = document.createElement('div');
+    tile.className = 'player-tile' + (!p.alive ? ' dead' : '');
+
+    // Can they be selected?
+    const isSelectable = p.alive && p.id !== myId && gameState.phase === 'day' && gameState.voteActive && me?.alive && !hasVoted;
+    if (isSelectable) tile.classList.add('selectable');
+
+    const votedFor = gameState.votes?.[myId];
+    if (votedFor === p.id) tile.classList.add('selected');
+
+    tile.innerHTML = `
+      ${p.isMayor ? '<div class="mayor-crown">👑</div>' : ''}
+      <div class="player-avatar">${role?.emoji || '🧑'}</div>
+      <div class="player-name">${p.name}</div>
+      ${p.id === myId ? '<div style="font-size:0.65rem;color:var(--gold);margin-top:2px">Du</div>' : ''}
+      ${!p.alive ? '<div class="dead-overlay">💀</div>' : ''}
+    `;
+
+    if (isSelectable) {
+      tile.onclick = () => castVote(p.id);
+    }
+
+    container.appendChild(tile);
+  });
+}
+
+function renderLog() {
+  const el = document.getElementById('game-log');
+  if (!el || !gameState.log) return;
+  const wasBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 40;
+  el.innerHTML = gameState.log.map(l => `
+    <div class="chat-msg msg-system"><em>${l.text}</em></div>
+  `).join('');
+  if (wasBottom) el.scrollTop = el.scrollHeight;
+}
+
+function renderRoleInfo(me) {
+  const el = document.getElementById('game-role-info');
+  const role = ROLES[me?.role];
+  if (!role) return;
+
+  const teamColors = { village: '#7dffa0', wolf: '#ff9090', solo: '#d0a0ff', lovers: '#ffb0d0' };
+  const teamNames = { village: '🏘️ Dorf', wolf: '🐺 Werwölfe', solo: '🎭 Solo', lovers: '💕 Liebespaar' };
+
+  el.innerHTML = `
+    <div style="text-align:center;padding:10px">
+      <div style="font-size:3rem;margin-bottom:8px">${role.emoji}</div>
+      <div style="font-family:'Cinzel',serif;font-size:1.2rem;color:var(--gold);margin-bottom:6px">${role.name}</div>
+      <div class="role-team" style="background:rgba(0,0,0,0.3);color:${teamColors[role.team]};border:1px solid currentColor;display:inline-block;padding:3px 12px;border-radius:20px;margin-bottom:10px">
+        ${teamNames[role.team]}
+      </div>
+      <div style="color:var(--muted);font-style:italic;font-size:0.95rem">${role.desc}</div>
+      ${me?.inLove ? '<div style="margin-top:10px;color:#ff90b0">💕 Verliebt in: ' + (gameState.players.find(p=>p.id===me.lovePartner)?.name||'?') + '</div>' : ''}
+    </div>
+    <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">
+      ${gameState.players.map(p => {
+        const pr = ROLES[p.role];
+        const showRole = (p.id === myId) || (!p.alive);
+        return `
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 0;opacity:${p.alive?1:0.5}">
+            <span>${pr?.emoji||'🧑'}</span>
+            <span style="font-family:'Cinzel',serif;font-size:0.8rem;flex:1">${p.name}${p.isMayor?' 👑':''}</span>
+            ${showRole ? `<span class="role-chip">${pr?.name||'?'}</span>` : ''}
+            ${!p.alive ? '<span>💀</span>' : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VOTING
+// ═══════════════════════════════════════════════════════════
+function toggleVote() {
+  if (!isHost) return;
+  if (gameState.voteActive) {
+    endVote();
+  } else {
+    startVote();
+  }
+}
+
+function startVote() {
+  gameState.voteActive = true;
+  gameState.votes = {};
+  gameState.voteDeadline = Date.now() + 60000;
+  hasVoted = false;
+  voteTimeLeft = 60;
+  saveGame();
+  addLog('Abstimmung begonnen! 60 Sekunden.');
+  saveGame();
+  startVoteTimer();
+  document.getElementById('vote-panel').style.display = '';
+  document.getElementById('vote-toggle-btn').textContent = '⛔ Abstimmung beenden';
+}
+
+function startVoteTimer() {
+  if (voteInterval) clearInterval(voteInterval);
+  voteInterval = setInterval(() => {
+    if (!gameState.voteActive) { clearInterval(voteInterval); return; }
+    const remaining = Math.max(0, Math.round((gameState.voteDeadline - Date.now()) / 1000));
+    document.getElementById('vote-timer').textContent = remaining;
+    if (remaining <= 0) {
+      clearInterval(voteInterval);
+      if (isHost) endVote();
+    }
+    updateVoteUI();
+  }, 1000);
+}
+
+function updateVoteUI() {
+  if (!gameState.voteActive) return;
+  const el = document.getElementById('vote-bars');
+  if (!el) return;
+  const vp = document.getElementById('vote-panel');
+  vp.style.display = '';
+
+  // Count votes
+  const counts = {};
+  const alive = getAlive();
+  alive.forEach(p => counts[p.id] = 0);
+  Object.values(gameState.votes || {}).forEach(v => {
+    if (counts[v] !== undefined) counts[v]++;
+    else counts[v] = 1;
+  });
+
+  const mayor = gameState.players.find(p => p.id === gameState.mayor && p.alive);
+  const totalVotes = Object.values(counts).reduce((a,b)=>a+b,0) +
+    (mayor && gameState.votes?.[mayor.id] ? 1 : 0); // mayor double vote
+
+  const sorted = alive.sort((a,b) => (counts[b.id]||0) - (counts[a.id]||0));
+  el.innerHTML = sorted.map(p => {
+    let v = counts[p.id] || 0;
+    if (p.isMayor) v = Math.max(0, v); // displayed normally
+    const pct = totalVotes > 0 ? Math.round(v/totalVotes*100) : 0;
+    return `
+      <div class="vote-bar-row">
+        <div class="vb-name">${p.name}</div>
+        <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%"></div></div>
+        <div class="vote-count">${v}</div>
+      </div>
+    `;
+  }).join('');
+
+  const myVote = gameState.votes?.[myId];
+  document.getElementById('vote-status').textContent = myVote
+    ? `Du hast abgestimmt. ${Object.keys(gameState.votes||{}).length} von ${alive.length} haben gewählt.`
+    : `Noch nicht abgestimmt. ${Object.keys(gameState.votes||{}).length} von ${alive.length} haben gewählt.`;
+
+  const remaining = Math.max(0, Math.round((gameState.voteDeadline - Date.now()) / 1000));
+  document.getElementById('vote-timer').textContent = remaining;
+}
+
+function castVote(targetId) {
+  if (hasVoted) return;
+  const me = getMe();
+  if (!me || !me.alive || me.silenced) { toast('Du kannst nicht abstimmen!', 'red'); return; }
+
+  // Refresh game state first
+  const fresh = loadGame();
+  gameState = fresh;
+
+  if (!gameState.votes) gameState.votes = {};
+  gameState.votes[myId] = targetId;
+
+  // Mayor gets double vote
+  if (me.isMayor && !gameState.votes['mayor_extra_'+myId]) {
+    gameState.votes['mayor_extra_'+myId] = targetId;
+  }
+
+  saveGame();
+  hasVoted = true;
+  toast('Stimme abgegeben!', 'green');
+  renderPlayersGrid();
+  updateVoteUI();
+}
+
+function endVote() {
+  const fresh = loadGame();
+  gameState = fresh;
+  gameState.voteActive = false;
+  clearInterval(voteInterval);
+
+  // Count
+  const counts = {};
+  getAlive().forEach(p => counts[p.id] = 0);
+  Object.values(gameState.votes || {}).forEach(v => {
+    if (counts[v] !== undefined) counts[v] = (counts[v]||0) + 1;
+  });
+
+  let winner = null, max = 0;
+  Object.keys(counts).forEach(id => { if (counts[id] > max) { max = counts[id]; winner = id; } });
+
+  document.getElementById('vote-panel').style.display = 'none';
+  document.getElementById('vote-toggle-btn').textContent = '🗳️ Abstimmung';
+
+  if (winner && max > 0) {
+    const killed = gameState.players.find(p => p.id === winner);
+    if (killed) {
+      addLog(`🗳️ Abstimmung beendet: ${killed.name} wird gelyncht!`);
+      handleDeath(killed, 'lynched');
+    }
+  } else {
+    addLog('Abstimmung beendet. Kein Ergebnis.');
+  }
+
+  gameState.votes = {};
+  saveGame();
+  checkWinCondition();
+}
+
+// ═══════════════════════════════════════════════════════════
+// NIGHT ACTIONS
+// ═══════════════════════════════════════════════════════════
+function showNightActionIfNeeded() {
+  const me = getMe();
+  if (!me || !me.alive) return;
+  const role = ROLES[me.role];
+  if (!role || !role.nightAction) return;
+
+  // Flash action badge
+  const badge = document.getElementById('badge-action');
+  if (badge) badge.classList.add('show');
+
+  // Show role reveal at start of night
+  showRoleReveal(me.role);
+}
+
+function showRoleReveal(roleKey) {
+  const role = ROLES[roleKey];
+  if (!role) return;
+
+  const overlay = document.getElementById('role-reveal');
+  overlay.style.display = '';
+
+  document.getElementById('reveal-role-name').textContent = role.name;
+
+  const teamNames = { village: '🏘️ Dorfbewohner', wolf: '🐺 Werwolf', solo: '🎭 Solospieler', lovers: '💕 Verliebte' };
+  const teamColors = { village: 'team-village', wolf: 'team-wolf', solo: 'team-solo', lovers: 'team-lovers' };
+  const teamEl = document.getElementById('reveal-role-team');
+  teamEl.textContent = teamNames[role.team] || role.team;
+  teamEl.className = 'role-team ' + (teamColors[role.team] || 'team-village');
+
+  document.getElementById('reveal-role-desc').textContent = role.desc;
+
+  // Show emoji as placeholder, try to load AI image
+  document.getElementById('reveal-emoji').textContent = role.emoji;
+
+  // Load night action UI after reveal is closed
+}
+
+function closeRoleReveal() {
+  document.getElementById('role-reveal').style.display = 'none';
+  switchPane('players');
+  showNightActionUI();
+}
+
+function showNightActionUI() {
+  const me = getMe();
+  if (!me || !me.alive) return;
+  const role = ROLES[me.role];
+  if (!role || !role.nightAction) return;
+
+  const panel = document.getElementById('night-action-panel');
+  const title = document.getElementById('night-action-title');
+  const content = document.getElementById('night-action-content');
+  panel.style.display = '';
+  markActionBadge(true);
+
+  const alive = getAlive().filter(p => p.id !== myId);
+
+  switch(role.nightAction) {
+    case 'peek':
+      title.textContent = '🔮 Seherin – Rolle ansehen';
+      content.innerHTML = `
+        <div class="text-muted text-sm mb-8">Wähle einen Spieler, dessen Rolle du sehen möchtest:</div>
+        ${alive.map(p => `<button class="btn btn-ghost mb-8" style="width:100%;justify-content:flex-start" onclick="doNightAction('peek','${p.id}')">🧑 ${p.name}</button>`).join('')}
+      `;
+      break;
+
+    case 'protect':
+      title.textContent = '💉 Doktor – Spieler schützen';
+      content.innerHTML = `
+        <div class="text-muted text-sm mb-8">Wen schützt du diese Nacht?</div>
+        ${getAlive().map(p => `<button class="btn btn-ghost mb-8" style="width:100%;justify-content:flex-start" onclick="doNightAction('protect','${p.id}')">🧑 ${p.name}${p.id===myId?' (Du)':''}</button>`).join('')}
+      `;
+      break;
+
+    case 'wolfvote':
+      title.textContent = '🐺 Wolfsvoting – Opfer wählen';
+      const otherWolves = gameState.players.filter(p => (p.role==='werwolf'||p.role==='alphawerwolf') && p.alive && p.id !== myId);
+      content.innerHTML = `
+        ${otherWolves.length ? `<div class="text-muted text-sm mb-8">Andere Wölfe: ${otherWolves.map(p=>p.name).join(', ')}</div>` : ''}
+        <div class="text-muted text-sm mb-8">Wähle ein Opfer:</div>
+        ${alive.filter(p=>p.role!=='werwolf'&&p.role!=='alphawerwolf').map(p => `<button class="btn btn-ghost mb-8" style="width:100%;justify-content:flex-start" onclick="doNightAction('wolfvote','${p.id}')">🧑 ${p.name}</button>`).join('')}
+      `;
+      break;
+
+    case 'witch':
+      title.textContent = '🧪 Hexe – Tränke';
+      const wolfTarget = gameState.wolfTarget;
+      const targetedPlayer = wolfTarget ? gameState.players.find(p=>p.id===wolfTarget) : null;
+      content.innerHTML = `
+        ${targetedPlayer ? `<div class="text-muted text-sm mb-8">Die Wölfe wollen ${targetedPlayer.name} töten.</div>` : ''}
+        ${!gameState.witchUsedHeal && targetedPlayer ? `<button class="btn btn-green mb-8" style="width:100%" onclick="doNightAction('witch_heal','${wolfTarget}')">💚 Heiltrank – ${targetedPlayer.name} retten</button>` : ''}
+        ${!gameState.witchUsedKill ? `
+          <div class="text-muted text-sm mb-8 mt-8">Gifttrank einsetzen:</div>
+          ${alive.map(p => `<button class="btn btn-red mb-8" style="width:100%;justify-content:flex-start;font-size:0.85rem" onclick="doNightAction('witch_kill','${p.id}')">☠️ ${p.name} töten</button>`).join('')}
+        ` : ''}
+        <button class="btn btn-ghost mt-8" style="width:100%" onclick="doNightAction('witch_pass','')">Nichts tun</button>
+      `;
+      break;
+
+    case 'love':
+      title.textContent = '💘 Amor – Verlieben';
+      if (gameState.day > 1) {
+        content.innerHTML = '<div class="text-muted text-sm">Amor wirkt nur in der ersten Nacht.</div>';
+      } else {
+        let selected = [];
+        content.innerHTML = `
+          <div class="text-muted text-sm mb-8">Wähle zwei Spieler die sich verlieben:</div>
+          <div id="amor-selected" class="text-sm mb-8" style="color:var(--gold)">Ausgewählt: —</div>
+          ${getAlive().map(p => `
+            <button class="btn btn-ghost mb-8" style="width:100%;justify-content:flex-start" id="amor-btn-${p.id}" onclick="amorSelect('${p.id}')">💘 ${p.name}</button>
+          `).join('')}
+          <button class="btn btn-gold mt-8" style="width:100%" onclick="confirmAmor()" disabled id="amor-confirm">Verlieben ❤️</button>
+        `;
+      }
+      break;
+
+    case 'visit':
+      title.textContent = '💃 Dorfmatratze – Besuchen';
+      content.innerHTML = `
+        <div class="text-muted text-sm mb-8">Wen besuchst du heute Nacht?</div>
+        ${alive.map(p => `<button class="btn btn-ghost mb-8" style="width:100%;justify-content:flex-start" onclick="doNightAction('visit','${p.id}')">🧑 ${p.name}</button>`).join('')}
+      `;
+      break;
+
+    case 'detect':
+      title.textContent = '🔍 Detektiv';
+      let detectSelected = [];
+      content.innerHTML = `
+        <div class="text-muted text-sm mb-8">Wähle 2 Spieler (gleiches Team?):</div>
+        <div id="detect-selected" class="text-sm mb-8" style="color:var(--gold)">Ausgewählt: —</div>
+        ${alive.map(p => `<button class="btn btn-ghost mb-8" style="width:100%;justify-content:flex-start" id="detect-btn-${p.id}" onclick="detectSelect('${p.id}')">🧑 ${p.name}</button>`).join('')}
+        <button class="btn btn-gold mt-8" style="width:100%" onclick="confirmDetect()" disabled id="detect-confirm">Untersuchen</button>
+      `;
+      break;
+
+    case 'smkill':
+      title.textContent = '🔪 Serienmörder';
+      content.innerHTML = `
+        <div class="text-muted text-sm mb-8">Wen tötest du heute Nacht?</div>
+        ${alive.map(p => `<button class="btn btn-red mb-8" style="width:100%;justify-content:flex-start" onclick="doNightAction('smkill','${p.id}')">🔪 ${p.name}</button>`).join('')}
+      `;
+      break;
+
+    default:
+      panel.style.display = 'none';
+  }
+}
+
+let amorPicks = [];
+function amorSelect(id) {
+  if (amorPicks.includes(id)) {
+    amorPicks = amorPicks.filter(x=>x!==id);
+    document.getElementById('amor-btn-'+id)?.classList.remove('selected');
+  } else if (amorPicks.length < 2) {
+    amorPicks.push(id);
+    document.getElementById('amor-btn-'+id)?.classList.add('selected');
+  }
+  const names = amorPicks.map(i => gameState.players.find(p=>p.id===i)?.name || '?');
+  document.getElementById('amor-selected').textContent = 'Ausgewählt: ' + (names.join(' & ') || '—');
+  document.getElementById('amor-confirm').disabled = amorPicks.length !== 2;
+}
+
+function confirmAmor() {
+  if (amorPicks.length !== 2) return;
+  doNightAction('love', amorPicks.join(','));
+}
+
+let detectPicks = [];
+function detectSelect(id) {
+  if (detectPicks.includes(id)) {
+    detectPicks = detectPicks.filter(x=>x!==id);
+    document.getElementById('detect-btn-'+id)?.classList.remove('selected');
+  } else if (detectPicks.length < 2) {
+    detectPicks.push(id);
+    document.getElementById('detect-btn-'+id)?.classList.add('selected');
+  }
+  const names = detectPicks.map(i => gameState.players.find(p=>p.id===i)?.name || '?');
+  document.getElementById('detect-selected').textContent = 'Ausgewählt: ' + (names.join(' & ') || '—');
+  document.getElementById('detect-confirm').disabled = detectPicks.length !== 2;
+}
+
+function confirmDetect() {
+  if (detectPicks.length !== 2) return;
+  doNightAction('detect', detectPicks.join(','));
+}
+
+function doNightAction(action, target) {
+  const fresh = loadGame();
+  gameState = fresh;
+  if (!gameState.nightActions) gameState.nightActions = {};
+
+  const me = getMe();
+
+  switch(action) {
+    case 'peek': {
+      const target_player = gameState.players.find(p=>p.id===target);
+      if (target_player) {
+        const role = ROLES[target_player.role];
+        toast(`🔮 ${target_player.name} ist: ${role?.emoji} ${role?.name}`, '');
+        addLog(`🔮 Seherin hat ${target_player.name} untersucht.`);
+      }
+      break;
+    }
+    case 'protect': {
+      gameState.players.forEach(p => p.protected = false);
+      const tp = gameState.players.find(p=>p.id===target);
+      if (tp) tp.protected = true;
+      addLog(`💉 Doktor schützt jemanden.`);
+      break;
+    }
+    case 'wolfvote': {
+      if (!gameState.nightActions.wolfVotes) gameState.nightActions.wolfVotes = {};
+      const weight = me?.role === 'alphawerwolf' ? 2 : 1;
+      gameState.nightActions.wolfVotes[myId] = { target, weight };
+      addLog(`🐺 Ein Wolf hat abgestimmt.`);
+
+      // If host, auto-resolve wolf votes after 5s
+      if (isHost) setTimeout(resolveWolfVotes, 5000);
+      break;
+    }
+    case 'witch_heal': {
+      const tp = gameState.players.find(p=>p.id===target);
+      if (tp) tp.protected = true;
+      gameState.witchUsedHeal = true;
+      gameState.wolfTarget = null;
+      addLog(`🧪 Hexe hat den Heiltrank eingesetzt.`);
+      break;
+    }
+    case 'witch_kill': {
+      const tp = gameState.players.find(p=>p.id===target);
+      if (tp) {
+        handleDeath(tp, 'witch');
+      }
+      gameState.witchUsedKill = true;
+      addLog(`☠️ Hexe hat den Gifttrank eingesetzt.`);
+      break;
+    }
+    case 'witch_pass': {
+      addLog(`🧪 Hexe hat keine Tränke eingesetzt.`);
+      break;
+    }
+    case 'love': {
+      const ids = target.split(',');
+      const p1 = gameState.players.find(p=>p.id===ids[0]);
+      const p2 = gameState.players.find(p=>p.id===ids[1]);
+      if (p1 && p2) {
+        p1.inLove = true; p1.lovePartner = p2.id;
+        p2.inLove = true; p2.lovePartner = p1.id;
+        addLog(`💘 Amor hat ${p1.name} und ${p2.name} verliebt.`);
+      }
+      break;
+    }
+    case 'visit': {
+      gameState.nightActions.dorfmatratzeVisit = target;
+      const tp = gameState.players.find(p=>p.id===target);
+      addLog(`💃 Dorfmatratze besucht jemanden.`);
+      break;
+    }
+    case 'detect': {
+      const ids = target.split(',');
+      const p1 = gameState.players.find(p=>p.id===ids[0]);
+      const p2 = gameState.players.find(p=>p.id===ids[1]);
+      if (p1 && p2) {
+        const same = ROLES[p1.role]?.team === ROLES[p2.role]?.team;
+        toast(`🔍 ${p1.name} & ${p2.name}: ${same ? '✅ Gleiches Team' : '❌ Verschiedene Teams'}`, same?'green':'red');
+        addLog(`🔍 Detektiv hat zwei Spieler untersucht.`);
+      }
+      break;
+    }
+    case 'smkill': {
+      const tp = gameState.players.find(p=>p.id===target);
+      if (tp && !tp.protected) {
+        handleDeath(tp, 'smkill');
+        addLog(`🔪 Serienmörder hat ${tp.name} getötet.`);
+      }
+      break;
+    }
+  }
+
+  saveGame();
+  document.getElementById('night-action-panel').style.display = 'none';
+  const badge = document.getElementById('badge-action');
+  if (badge) badge.classList.remove('show');
+  switchPane('players');
+  renderGame();
+}
+
+function resolveWolfVotes() {
+  const fresh = loadGame();
+  gameState = fresh;
+  if (!gameState.nightActions?.wolfVotes) return;
+
+  const counts = {};
+  Object.values(gameState.nightActions.wolfVotes).forEach(({target, weight}) => {
+    counts[target] = (counts[target]||0) + weight;
+  });
+
+  let winner = null, max = 0;
+  Object.keys(counts).forEach(id => { if (counts[id] > max) { max = counts[id]; winner = id; } });
+
+  if (winner) {
+    const tp = gameState.players.find(p=>p.id===winner);
+    if (tp) {
+      gameState.wolfTarget = winner;
+      addLog(`🐺 Die Wölfe haben ihr Ziel gewählt: ${tp.name}`);
+      // Check dorfmatratze
+      const dorfmatratzeVisit = gameState.nightActions?.dorfmatratzeVisit;
+      if (dorfmatratzeVisit === winner) {
+        const dm = gameState.players.find(p=>p.role==='dorfmatratze'&&p.alive);
+        if (dm) {
+          handleDeath(dm, 'wolf');
+          addLog(`💃 Dorfmatratze hat ${tp.name} geschützt und ist gestorben!`);
+          gameState.wolfTarget = null;
+        }
+      } else if (!tp.protected) {
+        // Check if cursed
+        if (tp.role === 'verfluchter_dorfbewohner') {
+          tp.role = 'werwolf';
+          addLog(`😈 ${tp.name} wurde zum Werwolf!`);
+          gameState.wolfTarget = null;
+        }
+      }
+    }
+  }
+
+  saveGame();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEATH HANDLING
+// ═══════════════════════════════════════════════════════════
+function handleDeath(player, cause) {
+  if (!player.alive) return;
+  player.alive = false;
+
+  addLog(`💀 ${player.name} ist gestorben (${deathCauseText(cause)}).`);
+
+  // Special death effects
+  if (player.role === 'jaeger') {
+    // Hunter shoots
+    addLog(`🎯 Jäger ${player.name} darf noch jemanden erschießen!`);
+    if (player.id === myId) {
+      showHunterShot();
+    }
+  }
+
+  if (player.role === 'terrorist') {
+    // Kill neighbors
+    const alive = getAlive();
+    const idx = gameState.players.findIndex(p=>p.id===player.id);
+    const neighbors = [gameState.players[idx-1], gameState.players[idx+1]].filter(p=>p&&p.alive);
+    neighbors.forEach(n => { handleDeath(n, 'terrorist'); });
+  }
+
+  if (player.role === 'bloody_mary' && cause === 'lynched') {
+    addLog(`🩸 Bloody Mary reißt einen Ankläger mit!`);
+    // Simplification: mark for host to handle
+  }
+
+  // Lover dies
+  if (player.inLove && player.lovePartner) {
+    const partner = gameState.players.find(p=>p.id===player.lovePartner);
+    if (partner && partner.alive) {
+      addLog(`💔 ${partner.name} stirbt aus Liebeskummer!`);
+      handleDeath(partner, 'love');
+    }
+  }
+
+  // Mayor died → need new mayor
+  if (player.isMayor) {
+    addLog(`👑 Der Bürgermeister ist gestorben. Morgen wird ein neuer bestimmt!`);
+    gameState.needNewMayor = true;
+  }
+
+  // Narr win check
+  if (player.role === 'narr' && cause === 'lynched') {
+    gameState.winner = 'narr';
+    gameState.phase = 'ended';
+    addLog(`🃏 Der Narr hat gewonnen! Er wurde vom Dorf gelyncht.`);
+  }
+}
+
+function deathCauseText(cause) {
+  const map = { wolf:'von Werwölfen', lynched:'gelyncht', witch:'Hexengift', terrorist:'Terroranschlag', love:'Liebeskummer', smkill:'Serienmörder', arson:'Brandstifter', trap:'Falle', hunter_shot:'Jägerschuss' };
+  return map[cause] || cause;
+}
+
+function showHunterShot() {
+  const panel = document.getElementById('night-action-panel');
+  const title = document.getElementById('night-action-title');
+  const content = document.getElementById('night-action-content');
+  panel.style.display = '';
+  title.textContent = '🎯 Jäger – Schuss!';
+  const alive = getAlive();
+  content.innerHTML = `
+    <div class="text-muted text-sm mb-8">Du stirbst! Wen nimmst du mit?</div>
+    ${alive.map(p => `<button class="btn btn-red mb-8" style="width:100%;justify-content:flex-start" onclick="hunterShoot('${p.id}')">🎯 ${p.name}</button>`).join('')}
+    <button class="btn btn-ghost" style="width:100%" onclick="hunterShoot('')">Niemanden</button>
+  `;
+}
+
+function hunterShoot(targetId) {
+  if (targetId) {
+    const fresh = loadGame();
+    gameState = fresh;
+    const tp = gameState.players.find(p=>p.id===targetId);
+    if (tp && tp.alive) {
+      handleDeath(tp, 'hunter_shot');
+    }
+    saveGame();
+  }
+  document.getElementById('night-action-panel').style.display = 'none';
+  markActionBadge(false);
+  renderGame();
+}
+
+function renderDeathNews() {
+  // Show who died in the night
+  const wolfTarget = gameState.wolfTarget;
+  if (wolfTarget) {
+    const tp = gameState.players.find(p=>p.id===wolfTarget);
+    if (tp) {
+      toast(`☀️ Guten Morgen! ${tp.name} wurde gefunden...`, '');
+    }
+  }
+  gameState.wolfTarget = null;
+  if (isHost) saveGame();
+}
+
+// ═══════════════════════════════════════════════════════════
+// PHASE TRANSITIONS
+// ═══════════════════════════════════════════════════════════
+function goToNight() {
+  if (!isHost) return;
+  const fresh = loadGame();
+  gameState = fresh;
+
+  // Apply wolf kill
+  if (gameState.wolfTarget) {
+    const tp = gameState.players.find(p=>p.id===gameState.wolfTarget);
+    if (tp && tp.alive && !tp.protected) {
+      handleDeath(tp, 'wolf');
+    } else if (tp?.protected) {
+      addLog(`🛡️ Jemand wurde geschützt und überlebte die Nacht.`);
+    }
+  }
+
+  gameState.wolfTarget = null;
+  gameState.nightActions = {};
+  gameState.players.forEach(p => p.protected = false);
+
+  // New mayor needed?
+  if (gameState.needNewMayor) {
+    gameState.needNewMayor = false;
+    gameState.phase = 'mayorvote';
+  } else {
+    gameState.day++;
+    gameState.phase = 'night';
+  }
+
+  addLog(gameState.phase === 'night' ? `🌙 Nacht ${gameState.day} beginnt...` : '👑 Neue Bürgermeisterwahl!');
+  checkWinCondition();
+  saveGame();
+  renderGame();
+}
+
+function goToDay() {
+  if (!isHost) return;
+  const fresh = loadGame();
+  gameState = fresh;
+
+  // Apply wolf kill if pending
+  if (gameState.wolfTarget) {
+    const tp = gameState.players.find(p=>p.id===gameState.wolfTarget);
+    if (tp && tp.alive && !tp.protected) {
+      handleDeath(tp, 'wolf');
+    } else if (tp?.protected) {
+      addLog(`🛡️ Jemand wurde diese Nacht beschützt.`);
+    }
+    gameState.wolfTarget = null;
+  }
+
+  gameState.players.forEach(p => { p.protected = false; p.silenced = false; });
+  gameState.phase = 'day';
+  gameState.nightActions = {};
+  addLog(`☀️ Tag ${gameState.day} beginnt. Das Dorf erwacht...`);
+  checkWinCondition();
+  saveGame();
+  renderGame();
+}
+
+function hostKillPlayer() {
+  if (!isHost) return;
+  const fresh = loadGame();
+  gameState = fresh;
+  const id = document.getElementById('kill-select').value;
+  if (!id) return;
+  const tp = gameState.players.find(p=>p.id===id);
+  if (tp) {
+    handleDeath(tp, 'wolf');
+    checkWinCondition();
+    saveGame();
+    renderGame();
+    toast(`${tp.name} wurde getötet.`, 'red');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// WIN CONDITIONS
+// ═══════════════════════════════════════════════════════════
+function checkWinCondition() {
+  const alive = getAlive();
+  const wolves = alive.filter(p=>p.role==='werwolf'||p.role==='alphawerwolf');
+  const villagers = alive.filter(p=>ROLES[p.role]?.team==='village');
+  const solos = alive.filter(p=>ROLES[p.role]?.team==='solo');
+
+  if (wolves.length === 0) {
+    // Village wins (or solo if only one remains)
+    if (solos.length === 1 && alive.length === 1) {
+      gameState.winner = 'solo';
+      gameState.phase = 'ended';
+      addLog(`🎭 ${solos[0].name} hat als Solospieler gewonnen!`);
+    } else if (gameState.winner !== 'narr') {
+      gameState.winner = 'village';
+      gameState.phase = 'ended';
+      addLog(`🏘️ Das Dorf hat gewonnen! Alle Werwölfe sind tot.`);
+    }
+  } else if (wolves.length >= alive.length - wolves.length) {
+    // Wolves win
+    gameState.winner = 'wolf';
+    gameState.phase = 'ended';
+    addLog(`🐺 Die Werwölfe haben gewonnen! Sie sind in der Mehrheit.`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESULT
+// ═══════════════════════════════════════════════════════════
+function showResult(winner) {
+  const screen = document.getElementById('result-screen');
+  const content = document.getElementById('result-content');
+  screen.style.display = '';
+
+  const map = {
+    village: { cls:'result-village', title:'🏘️ Das Dorf hat gewonnen!', sub:'Die Werwölfe wurden vertrieben.' },
+    wolf: { cls:'result-wolf', title:'🐺 Die Werwölfe haben gewonnen!', sub:'Das Dorf liegt in Trümmern.' },
+    solo: { cls:'result-solo', title:'🎭 Solospieler gewinnt!', sub:'Ein Einzelkämpfer hat überlebt.' },
+    narr: { cls:'result-solo', title:'🃏 Der Narr gewinnt!', sub:'Er wurde gelyncht – genau wie geplant.' },
+  };
+
+  const m = map[winner] || map.village;
+  screen.className = 'result-screen ' + m.cls;
+
+  content.innerHTML = `
+    <h1>${m.title}</h1>
+    <div class="text-muted" style="font-size:1.2rem;font-style:italic">${m.sub}</div>
+    <div style="margin-top:20px;text-align:left;background:var(--card);border-radius:12px;padding:16px;max-height:300px;overflow-y:auto">
+      <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:10px">Alle Rollen:</div>
+      ${gameState.players.map(p => {
+        const role = ROLES[p.role];
+        return `<div style="display:flex;align-items:center;gap:10px;padding:5px 0">
+          <span style="font-size:1.3rem">${role?.emoji||'🧑'}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;flex:1">${p.name}</span>
+          <span style="font-size:0.8rem;color:var(--muted)">${role?.name||'?'}</span>
+          ${!p.alive ? '<span>💀</span>' : '<span style="color:var(--green-bright)">✓</span>'}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function endGameManual() {
+  if (!isHost) return;
+  if (!confirm('Spiel wirklich beenden?')) return;
+  // Stop narrator
+  narratorActive = false;
+  clearTimeout(narratorTimer);
+  if (voteInterval) clearInterval(voteInterval);
+  hideNarratorOverlay();
+  const fresh = loadGame();
+  gameState = fresh;
+  gameState.phase = 'ended';
+  gameState.winner = 'village';
+  saveGame();
+}
+
+function backToLanding() {
+  document.getElementById('result-screen').style.display = 'none';
+  if (pollInterval)   clearInterval(pollInterval);
+  if (narratorTimer)  clearTimeout(narratorTimer);
+  if (fbUnsubscribe)  { fbUnsubscribe(); fbUnsubscribe = null; }
+  narratorActive = false;
+  hideNarratorOverlay();
+  gameState  = null;
+  gameCode   = '';
+  isHost     = false;
+  showScreen('screen-landing');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PRE-GAME INFO OVERLAY
+// ═══════════════════════════════════════════════════════════
+
+// Full night sequence definition with display metadata
+const FULL_NIGHT_SEQUENCE = [
+  {
+    role: 'amor',
+    label: 'Amor',
+    icon: '💘',
+    duration: 40,
+    type: 'village',
+    nightCondition: 'Nur in Nacht 1',
+    condClass: 'cond-night1',
+    action: 'Wählt 2 Spieler, die sich verlieben. Das Liebespaar gewinnt oder verliert gemeinsam.',
+    flavour: 'Amor zieht seine Pfeile in der ersten Nacht – die einzige Chance.',
+    onlyNight1: true,
+  },
+  {
+    role: 'seherin',
+    label: 'Seherin',
+    icon: '🔮',
+    duration: 35,
+    type: 'village',
+    action: 'Zeigt auf einen Spieler → erfährt dessen Rolle (Team).',
+    flavour: 'Sie sieht, was andere verbergen.',
+  },
+  {
+    role: 'doktor',
+    label: 'Doktor',
+    icon: '💉',
+    duration: 30,
+    type: 'village',
+    action: 'Wählt einen Spieler (auch sich selbst) zum Schützen. Wird dieser Nacht angegriffen, überlebt er.',
+    flavour: 'Der Doktor kann jeden retten – auch sich selbst.',
+  },
+  {
+    role: 'dorfmatratze',
+    label: 'Dorfmatratze',
+    icon: '💃',
+    duration: 30,
+    type: 'village',
+    action: 'Schläft bei einem anderen Spieler. Werden die Wölfe diesen angreifen, stirbt sie statt ihm.',
+    flavour: 'Wo sie schläft, ist sie sicher – zuhause nicht.',
+  },
+  {
+    role: 'biestjaeger',
+    label: 'Biestjäger',
+    icon: '🪤',
+    duration: 25,
+    type: 'village',
+    action: 'Legt eine Falle bei einem Spieler. Greifen die Wölfe diesen Spieler in der nächsten Nacht an, stirbt ein Wolf.',
+    flavour: 'Die Falle schnappt zu, wenn man es am wenigsten erwartet.',
+  },
+  {
+    role: 'fuchs',
+    label: 'Fuchs',
+    icon: '🦊',
+    duration: 25,
+    type: 'village',
+    nightCondition: 'Solange aktiv',
+    action: 'Nennt 2 Namen. Ist mindestens einer ein Werwolf, erfährt er es. Sonst verliert er seine Fähigkeit dauerhaft.',
+    flavour: 'Ein falscher Riecher kostet den Fuchs seine Kraft.',
+  },
+  {
+    role: 'detektiv',
+    label: 'Detektiv',
+    icon: '🔍',
+    duration: 30,
+    type: 'village',
+    action: 'Wählt 2 Spieler. Erfährt, ob sie im selben Team sind (Ja/Nein).',
+    flavour: 'Gleiche Seite oder nicht – der Detektiv findet es heraus.',
+  },
+  {
+    role: 'dorfaeltester',
+    label: 'Dorfältester',
+    icon: '👴',
+    duration: 25,
+    type: 'village',
+    nightCondition: 'Max. 2×',
+    action: 'Hebt 2× pro Spiel die Fähigkeit eines Spielers für eine Nacht auf.',
+    flavour: 'Weisheit und Erfahrung – aber nur zweimal einsetzbar.',
+  },
+  {
+    role: 'alte_schachtel',
+    label: 'Alte Schachtel',
+    icon: '👵',
+    duration: 25,
+    type: 'village',
+    action: 'Wählt einen Spieler – dieser darf am nächsten Tag weder abstimmen noch sprechen.',
+    flavour: 'Wer sie unterschätzt, wird verstummen.',
+  },
+  {
+    role: 'werwolf',
+    label: 'Werwölfe',
+    icon: '🐺',
+    duration: 45,
+    type: 'wolf',
+    alsoFor: ['alphawerwolf'],
+    action: 'Alle Wölfe erwachen, sehen sich und stimmen gemeinsam über ein Opfer ab. Bei Gleichstand entscheidet der Alphawolf (falls vorhanden), sonst der Zufall.',
+    flavour: 'Im Schutz der Nacht jagen sie gemeinsam.',
+    nightCondition: 'Jede Nacht',
+  },
+  {
+    role: 'hexe',
+    label: 'Hexe',
+    icon: '🧪',
+    duration: 35,
+    type: 'village',
+    nightCondition: 'Nach den Wölfen',
+    action: 'Sieht das Wolf-Opfer. Kann 1× einen Heiltrank einsetzen (Opfer rettet) und 1× einen Gifttrank (tötet beliebigen Spieler).',
+    flavour: 'Die Hexe handelt immer nach den Wölfen – sie kennt ihr Opfer.',
+  },
+  {
+    role: 'serienmoerder',
+    label: 'Serienmörder',
+    icon: '🔪',
+    duration: 30,
+    type: 'solo',
+    action: 'Tötet jede Nacht einen Spieler. Kann nicht von Wölfen getötet werden. Gewinnt allein, wenn er der Letzte ist.',
+    flavour: 'Er tötet lautlos – Dorf und Wölfe gleichermaßen.',
+  },
+  {
+    role: 'brandstifter',
+    label: 'Brandstifter',
+    icon: '🔥',
+    duration: 30,
+    type: 'solo',
+    action: 'Übergießt Spieler mit Benzin (mehrere Nächte) oder zündet an (tötet alle Übergossenen gleichzeitig). Gewinnt allein.',
+    flavour: 'Geduldig – bis die Flammen lodern.',
+  },
+  {
+    role: 'schmied',
+    label: 'Schmied',
+    icon: '🔨',
+    duration: 20,
+    type: 'village',
+    action: 'Wirft einmal eine Münze: Kopf = Wölfe dürfen noch ein Opfer töten; Zahl = ein zufälliger Spieler muss seine Karte aufdecken.',
+    flavour: 'Das Schicksal liegt im Wurf einer Münze.',
+  },
+  {
+    role: 'saeufer',
+    label: 'Säufer',
+    icon: '🍺',
+    duration: 20,
+    type: 'village',
+    nightCondition: 'Max. 2×',
+    action: '2× pro Spiel auf Sauftour: kann in dieser Nacht nicht von Wölfen getötet werden, muss sich aber allen zeigen.',
+    flavour: 'Im Rausch ist er unantastbar – aber nicht unsichtbar.',
+  },
+];
+
+let pregameIsForStart = false;
+
+function showPregameInfo(forStart = false) {
+  pregameIsForStart = forStart;
+  const ov = document.getElementById('pregame-overlay');
+  ov.style.display = '';
+
+  // Update footer based on context
+  const startBtn = document.getElementById('pgf-start-btn');
+  const hint     = document.getElementById('pgf-hint');
+  if (forStart) {
+    startBtn.style.display = '';
+    hint.textContent = isHost
+      ? 'Alle bereit? Drücke „Spiel starten".'
+      : 'Nur der Host kann das Spiel starten.';
+  } else {
+    startBtn.style.display = 'none';
+    hint.textContent = 'Infos zur aktuellen Spielkonfiguration.';
+  }
+
+  switchPregameTab('sequence', document.querySelector('.pregame-tab'));
+  buildNightSequenceDisplay();
+  buildRoleCardsDisplay();
+}
+
+function hidePregameInfo() {
+  document.getElementById('pregame-overlay').style.display = 'none';
+}
+
+function switchPregameTab(name, clickedEl) {
+  // Update tab active state
+  document.querySelectorAll('.pregame-tab').forEach(t => t.classList.remove('active'));
+  if (clickedEl) clickedEl.classList.add('active');
+
+  // Show/hide content
+  ['sequence','roles','rules'].forEach(id => {
+    const el = document.getElementById('pgTab-' + id);
+    if (el) el.style.display = id === name ? '' : 'none';
+  });
+}
+
+function buildNightSequenceDisplay() {
+  const container = document.getElementById('pg-night-sequence');
+  if (!container) return;
+
+  // Figure out which roles are in this game
+  const cfg = gameState?.roleConfig || {};
+  const inGame = new Set();
+  Object.keys(cfg).forEach(k => { if ((cfg[k] || 0) > 0) inGame.add(k); });
+
+  let visibleStep = 0;
+  container.innerHTML = '';
+
+  FULL_NIGHT_SEQUENCE.forEach(step => {
+    // Check if this step is relevant (role or alsoFor in game)
+    const present = inGame.has(step.role) || (step.alsoFor || []).some(r => inGame.has(r));
+    const inactive = !present;
+
+    if (inactive) visibleStep; // don't increment step number for inactive
+    else visibleStep++;
+
+    const typeClass = step.type === 'wolf' ? 'seq-wolf'
+                    : step.type === 'solo' ? 'seq-special'
+                    : '';
+
+    const div = document.createElement('div');
+    div.className = 'night-seq-item ' + typeClass + (inactive ? ' seq-inactive' : '');
+
+    const condHtml = step.nightCondition
+      ? `<span class="seq-cond ${step.onlyNight1 ? 'cond-night1' : ''}">${step.nightCondition}</span>`
+      : '';
+
+    const notInGame = inactive ? '<div class="seq-not-in-game">Nicht im Spiel</div>' : '';
+
+    div.innerHTML = `
+      ${notInGame}
+      <div class="seq-num">${inactive ? '–' : visibleStep}</div>
+      <div class="seq-icon">${step.icon}</div>
+      <div class="seq-body">
+        <div class="seq-title">
+          ${step.label}
+          ${condHtml}
+        </div>
+        <div class="seq-action">${step.action}</div>
+        <div class="seq-desc">${step.flavour}</div>
+      </div>
+      ${!inactive ? `<div class="seq-timer">⏱ ${step.duration}s</div>` : ''}
+    `;
+    container.appendChild(div);
+  });
+}
+
+function buildRoleCardsDisplay() {
+  const container = document.getElementById('pg-role-cards');
+  if (!container) return;
+
+  const cfg = gameState?.roleConfig || {};
+  container.innerHTML = '';
+
+  const teamOrder = ['village', 'wolf', 'solo'];
+  const sorted = Object.keys(ROLES).sort((a, b) => {
+    const ta = teamOrder.indexOf(ROLES[a].team);
+    const tb = teamOrder.indexOf(ROLES[b].team);
+    return ta !== tb ? ta - tb : 0;
+  });
+
+  sorted.forEach(key => {
+    const role  = ROLES[key];
+    const count = cfg[key] || 0;
+    if (count === 0) return; // only show roles in this game
+
+    const teamClass = role.team === 'wolf' ? 'rc-wolf'
+                    : role.team === 'solo' ? 'rc-solo'
+                    : 'rc-village';
+
+    const teamLabel = role.team === 'wolf'    ? '<span class="ric-team ric-wolf-t">🐺 Werwolf</span>'
+                    : role.team === 'solo'    ? '<span class="ric-team ric-solo-t">🎭 Solo</span>'
+                    : '<span class="ric-team ric-village">🏘️ Dorf</span>';
+
+    const nightTag = ROLES[key].nightAction
+      ? '<div class="ric-night-tag">🌙 Nacht-Aktion</div>'
+      : '';
+
+    // Get ability text from FULL_NIGHT_SEQUENCE or role desc
+    const seqEntry = FULL_NIGHT_SEQUENCE.find(s => s.role === key);
+    const abilityText = seqEntry ? seqEntry.action : role.desc;
+
+    const card = document.createElement('div');
+    card.className = `role-info-card ${teamClass}`;
+    card.innerHTML = `
+      <span class="ric-emoji">${role.emoji}</span>
+      <div class="ric-name">${role.name}</div>
+      <div class="ric-count">${count}× im Spiel</div>
+      ${teamLabel}
+      ${nightTag}
+      <div class="ric-desc">${role.desc}</div>
+      <div class="ric-ability">⚡ ${abilityText}</div>
+    `;
+    container.appendChild(card);
+  });
+
+  if (container.children.length === 0) {
+    container.innerHTML = '<div class="text-muted text-sm text-center" style="padding:20px">Keine Rollen konfiguriert.</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ERZÄHLER – NARRATOR ENGINE
+// Runs only on the host client. Drives all phases automatically.
+// ═══════════════════════════════════════════════════════════
+
+// Night action sequence: reuse FULL_NIGHT_SEQUENCE defined above
+// (label used at runtime comes from .label field of FULL_NIGHT_SEQUENCE)
+const NIGHT_SEQUENCE = FULL_NIGHT_SEQUENCE.map(s => ({
+  role:      s.role,
+  label:     s.label + ' erwacht',
+  icon:      s.icon,
+  duration:  s.duration,
+  alsoFor:   s.alsoFor || [],
+  onlyNight1:s.onlyNight1 || false,
+  skipLabel: false,
+}));
+
+// Narrator state
+let narratorActive     = false;
+let narratorTimer      = null;
+let nightStepIndex     = 0;
+let nightSteps         = [];   // filtered steps that exist in current game
+let actionCountdown    = null;
+let actionSecsLeft     = 0;
+
+// ── Overlay helpers ─────────────────────────────────────────
+function showNarratorOverlay(icon, title, text, phase='', durationSecs=0, stepsDots=[]) {
+  const ov = document.getElementById('narrator-overlay');
+  const bx = document.getElementById('narrator-box');
+  ov.className = 'narrator-overlay visible' + (phase ? ' narrator-phase-'+phase : '');
+  document.getElementById('narrator-icon').textContent  = icon;
+  document.getElementById('narrator-title').textContent = title;
+  document.getElementById('narrator-text').textContent  = text;
+
+  // Step dots
+  const dotsEl = document.getElementById('night-step-bar');
+  dotsEl.innerHTML = stepsDots.map((d,i) => `<div class="night-step-dot ${d}"></div>`).join('');
+
+  // Countdown
+  const cd = document.getElementById('narrator-countdown');
+  if (durationSecs > 0) {
+    cd.style.display = '';
+    setNarratorCountdown(durationSecs);
+  } else {
+    cd.style.display = 'none';
+  }
+}
+
+function hideNarratorOverlay() {
+  document.getElementById('narrator-overlay').classList.remove('visible');
+  clearNarratorCountdown();
+}
+
+function setNarratorCountdown(secs) {
+  clearNarratorCountdown();
+  actionSecsLeft = secs;
+  document.getElementById('narrator-countdown-secs').textContent = secs + 's';
+  document.getElementById('narrator-countdown-fill').style.width = '100%';
+  // Trigger CSS transition to 0 after small delay
+  setTimeout(() => {
+    document.getElementById('narrator-countdown-fill').style.width = '0%';
+    document.getElementById('narrator-countdown-fill').style.transition = `width ${secs}s linear`;
+  }, 50);
+  actionCountdown = setInterval(() => {
+    actionSecsLeft--;
+    const el = document.getElementById('narrator-countdown-secs');
+    if (el) el.textContent = Math.max(0, actionSecsLeft) + 's';
+    if (actionSecsLeft <= 0) clearNarratorCountdown();
+  }, 1000);
+}
+
+function clearNarratorCountdown() {
+  if (actionCountdown) { clearInterval(actionCountdown); actionCountdown = null; }
+}
+
+// ── Action timer bar ─────────────────────────────────────────
+function startActionTimerBar(secs) {
+  const fill = document.getElementById('action-timer-fill');
+  if (!fill) return;
+  fill.style.transition = 'none';
+  fill.style.width = '100%';
+  setTimeout(() => {
+    fill.style.transition = `width ${secs}s linear`;
+    fill.style.width = '0%';
+  }, 50);
+}
+
+// ── Narrator chat message ─────────────────────────────────────
+function narratorSay(text, channel='day') {
+  if (!gameState.chat) gameState.chat = [];
+  gameState.chat.push({
+    channel,
+    type: 'msg-system',
+    author: '📖 Erzähler',
+    text,
+    ts: Date.now()
+  });
+}
+
+// ── Main narrator entry: called by host after startGame ───────
+function startNarrator() {
+  if (!isHost) return;
+  narratorActive = true;
+  document.getElementById('narrator-status').style.display = '';
+  document.getElementById('narrator-status-text').textContent = 'Erzähler läuft';
+  runMayorVotePhase();
+}
+
+// ── PHASE 0: Mayor Election ───────────────────────────────────
+function runMayorVotePhase() {
+  updateNarratorStatusText('Bürgermeisterwahl');
+  const playerNames = gameState.players.map(p => p.name).join(', ');
+  showNarratorOverlay(
+    '👑',
+    'Bürgermeisterwahl',
+    `Das Dorf versammelt sich. Wer soll die Gemeinde anführen? Alle Spieler stimmen ab: ${playerNames}.`,
+    '',
+    0
+  );
+
+  narratorSay(`👑 Das Spiel beginnt! Willkommen, ${playerNames}. Zuerst wählt ihr euren Bürgermeister.`);
+  saveGame();
+
+  // Auto-resolve after 20s if host hasn't gotten enough votes
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    hideNarratorOverlay();
+    autoCountMayorVotes();
+  }, 20000);
+}
+
+function autoCountMayorVotes() {
+  const fresh = loadGame();
+  gameState = fresh;
+
+  // Count votes
+  const counts = {};
+  Object.keys(gameState.votes || {}).filter(k => k.startsWith('mayor_')).forEach(k => {
+    const v = gameState.votes[k];
+    counts[v] = (counts[v] || 0) + 1;
+  });
+
+  // If no votes at all, pick randomly
+  let winner = null, max = 0;
+  Object.keys(counts).forEach(id => { if (counts[id] > max) { max = counts[id]; winner = id; } });
+  if (!winner) winner = gameState.players[Math.floor(Math.random() * gameState.players.length)].id;
+
+  gameState.mayor = winner;
+  const mayorPlayer = gameState.players.find(p => p.id === winner);
+  gameState.players.forEach(p => { p.isMayor = (p.id === winner); });
+  gameState.votes = {};
+
+  addLog(`👑 ${mayorPlayer?.name} wurde zum Bürgermeister gewählt!`);
+  narratorSay(`👑 ${mayorPlayer?.name} führt nun das Dorf als Bürgermeister. Seine Stimme zählt doppelt!`);
+
+  // Close mayor panel for all clients
+  document.getElementById('night-action-panel').style.display = 'none';
+  markActionBadge(false);
+
+  // Brief celebration, then start Night 1
+  showNarratorOverlay('👑', mayorPlayer?.name + ' ist Bürgermeister!',
+    'Das Dorf hat gesprochen. Nun bricht die erste Nacht herein...', '', 4);
+  saveGame();
+
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    hideNarratorOverlay();
+    beginNight();
+  }, 4500);
+}
+
+// ── NIGHT PHASE ───────────────────────────────────────────────
+function beginNight() {
+  const fresh = loadGame();
+  gameState = fresh;
+
+  gameState.phase = 'night';
+  gameState.nightActions = {};
+  gameState.wolfTarget = null;
+  gameState.players.forEach(p => { p.protected = false; p.silenced = false; });
+  gameState.voteActive = false;
+  gameState.votes = {};
+
+  updateNarratorStatusText(`Nacht ${gameState.day}`);
+  addLog(`🌙 Nacht ${gameState.day} beginnt. Das Dorf schläft...`);
+  narratorSay(`🌙 Die Nacht senkt sich über das Dorf. Alle schließen die Augen... niemand schaut auf.`);
+  saveGame();
+
+  // Build steps for roles that actually exist in this game
+  nightSteps = NIGHT_SEQUENCE.filter(step => {
+    const roleInGame = gameState.players.some(p =>
+      p.alive && (p.role === step.role || step.alsoFor.includes(p.role))
+    );
+    // Amor only acts in night 1
+    if (step.onlyNight1 && gameState.day > 1) return false;
+    // Skip wolf duplicates (werwolf entry covers alphawerwolf via alsoFor)
+    if (step.role === 'alphawerwolf') return false;
+    return roleInGame;
+  });
+
+  nightStepIndex = 0;
+
+  // Show night opening overlay
+  showNarratorOverlay(
+    '🌙',
+    `Nacht ${gameState.day}`,
+    'Das Dorf schläft. Die Dunkelheit legt sich über die Straßen...',
+    'night',
+    3,
+    nightSteps.map((_, i) => 'todo')
+  );
+
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    runNextNightStep();
+  }, 3500);
+}
+
+function runNextNightStep() {
+  // All steps done → go to dawn
+  if (nightStepIndex >= nightSteps.length) {
+    endNight();
+    return;
+  }
+
+  const fresh = loadGame();
+  gameState = fresh;
+
+  const step = nightSteps[nightStepIndex];
+  const dots = nightSteps.map((_, i) =>
+    i < nightStepIndex ? 'done' : i === nightStepIndex ? 'active' : ''
+  );
+
+  // Check if any alive player has this role
+  const eligible = gameState.players.filter(p =>
+    p.alive && (p.role === step.role || (step.alsoFor && step.alsoFor.includes(p.role)))
+  );
+
+  if (eligible.length === 0) {
+    // No player with this role alive, skip
+    nightStepIndex++;
+    runNextNightStep();
+    return;
+  }
+
+  const roleObj = ROLES[step.role];
+  const isMyStep = eligible.some(p => p.id === myId);
+
+  updateNarratorStatusText(step.label);
+  saveGame();
+
+  // Show narrator overlay to all
+  showNarratorOverlay(
+    step.icon,
+    step.label,
+    getNightStepFlavourText(step.role, eligible, gameState),
+    step.role === 'werwolf' || step.role === 'alphawerwolf' ? 'wolf' : 'night',
+    step.duration,
+    dots
+  );
+
+  // If it's my role → show action panel
+  if (isMyStep) {
+    // Small delay so overlay is visible first
+    setTimeout(() => {
+      hideNarratorOverlay();
+      showNightActionUI();
+      startActionTimerBar(step.duration);
+      switchPane('players');
+    }, 1200);
+  }
+
+  narratorSay(`${step.icon} ${step.label}...`);
+
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    // Auto-submit if player hasn't acted (skip for them)
+    document.getElementById('night-action-panel').style.display = 'none';
+    markActionBadge(false);
+    hideNarratorOverlay();
+    nightStepIndex++;
+
+    // Auto-resolve wolf vote if it was the wolf step
+    if (step.role === 'werwolf' || step.role === 'alphawerwolf') {
+      autoResolveWolfVote();
+    }
+
+    runNextNightStep();
+  }, step.duration * 1000 + 1200);
+}
+
+function autoResolveWolfVote() {
+  const fresh = loadGame();
+  gameState = fresh;
+  if (!gameState.nightActions) gameState.nightActions = {};
+
+  const wolfVotes = gameState.nightActions.wolfVotes || {};
+  const counts = {};
+  Object.values(wolfVotes).forEach(({ target, weight }) => {
+    counts[target] = (counts[target] || 0) + weight;
+  });
+
+  // If no votes cast → wolves pick randomly
+  const targets = gameState.players.filter(p =>
+    p.alive && p.role !== 'werwolf' && p.role !== 'alphawerwolf'
+  );
+
+  let winner = null, maxV = 0;
+  Object.keys(counts).forEach(id => { if (counts[id] > maxV) { maxV = counts[id]; winner = id; } });
+  if (!winner && targets.length > 0) {
+    winner = targets[Math.floor(Math.random() * targets.length)].id;
+  }
+
+  if (winner) {
+    gameState.wolfTarget = winner;
+    const tp = gameState.players.find(p => p.id === winner);
+    addLog(`🐺 Die Wölfe haben ihr Opfer gewählt.`);
+  }
+  saveGame();
+}
+
+function getNightStepFlavourText(role, eligible, gs) {
+  const names = eligible.map(p => p.name).join(' und ');
+  const flavour = {
+    amor:           `${names} schleicht durch die Nacht und zieht unsichtbare Pfeile auf...`,
+    seherin:        `${names} öffnet ihr inneres Auge und sucht die Wahrheit in der Dunkelheit...`,
+    doktor:         `${names} schnappt seinen Koffer und schleicht zu einem Haus, um zu schützen...`,
+    dorfmatratze:   `${names} macht sich leise auf den Weg zu einem anderen Haus für die Nacht...`,
+    biestjaeger:    `${names} hält inne und platziert heimlich eine tödliche Falle...`,
+    fuchs:          `${names} wittert in der Nacht und spürt etwas Verdächtiges auf...`,
+    detektiv:       `${names} beobachtet aus dem Schatten und analysiert zwei Verdächtige...`,
+    dorfaeltester:  `${names} greift tief in seine Weisheit und neutralisiert eine Bedrohung...`,
+    alte_schachtel: `${names} flüstert einen alten Fluch – einer wird schweigen müssen...`,
+    werwolf:        `${names} öffnen die Augen! Die Wölfe erkennen sich und wählen ihr Opfer...`,
+    hexe:           `${names} studiert ihre Tränke beim schwachen Mondlicht. Heilen oder töten?`,
+    serienmoerder:  `Eine Schattengestalt streicht durch die Gassen... niemand ist sicher.`,
+    brandstifter:   `Der Geruch von Benzin liegt in der Luft. Jemand plant Schlimmeres...`,
+    schmied:        `${names} wirft eine Münze – das Schicksal entscheidet...`,
+    saeufer:        `${names} torkelt durch die Nacht, unantastbar im Rausch...`,
+  };
+  return flavour[role] || `${names} handelt im Verborgenen...`;
+}
+
+// ── DAWN / DAY PHASE ──────────────────────────────────────────
+function endNight() {
+  const fresh = loadGame();
+  gameState = fresh;
+
+  // Apply wolf kill
+  let killedName = null;
+  if (gameState.wolfTarget) {
+    const tp = gameState.players.find(p => p.id === gameState.wolfTarget);
+    if (tp && tp.alive) {
+      // Dorfmatratze redirect check
+      const dmVisit = gameState.nightActions?.dorfmatratzeVisit;
+      if (dmVisit === gameState.wolfTarget) {
+        const dm = gameState.players.find(p => p.role === 'dorfmatratze' && p.alive);
+        if (dm) {
+          handleDeath(dm, 'wolf');
+          killedName = dm.name;
+          addLog(`💃 Die Dorfmatratze hat ${tp.name} geschützt und wurde selbst gefressen!`);
+        }
+      } else if (tp.protected) {
+        addLog(`🛡️ ${tp.name} wurde in der Nacht angegriffen, aber geschützt!`);
+        narratorSay(`🛡️ Die Dunkelheit hatte jemanden im Visier – doch der Doktor war einen Schritt schneller. Eine Seele wurde gerettet!`);
+      } else if (tp.role === 'verfluchter_dorfbewohner') {
+        tp.role = 'werwolf';
+        addLog(`😈 ${tp.name} wurde verwandelt! Er ist nun ein Werwolf!`);
+        narratorSay(`😈 Die Krallen der Wölfe haben ${tp.name} gestreift... und das Dunkel hat ihn verschluckt. Er erwacht als Wolf!`);
+      } else {
+        handleDeath(tp, 'wolf');
+        killedName = tp.name;
+      }
+    }
+    gameState.wolfTarget = null;
+  }
+
+  gameState.phase = 'day';
+  gameState.nightActions = {};
+  gameState.players.forEach(p => { p.protected = false; p.silenced = false; });
+
+  checkWinCondition();
+  saveGame();
+
+  if (gameState.phase === 'ended') {
+    hideNarratorOverlay();
+    showResult(gameState.winner);
+    return;
+  }
+
+  updateNarratorStatusText(`Tag ${gameState.day}`);
+
+  // Dawn announcement
+  const dawnText = killedName
+    ? `Die Sonne geht auf. Das Dorf erwacht. Doch auf dem Dorfplatz liegt ${killedName}... ein schrecklicher Anblick. Ein weiteres Opfer der Werwölfe.`
+    : `Die Sonne geht auf. Das Dorf erwacht. Diesmal hat niemand sein Leben verloren – doch die Bedrohung lauert noch immer.`;
+
+  addLog(`☀️ Tag ${gameState.day} beginnt.${killedName ? ` ${killedName} wurde von den Werwölfen getötet!` : ' Heute Nacht starb niemand.'}`);
+  narratorSay(killedName
+    ? `☀️ Die Nacht ist vorbei. ${killedName} wurde von den Werwölfen getötet. Trauer liegt über dem Dorf.`
+    : `☀️ Die Nacht ist vorbei. Heute hat jemand überlebt. Das Dorf atmet auf – aber für wie lange?`);
+
+  saveGame();
+
+  showNarratorOverlay(
+    killedName ? '💀' : '☀️',
+    killedName ? `${killedName} ist gestorben` : 'Eine ruhige Nacht',
+    dawnText,
+    'day',
+    5
+  );
+
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    hideNarratorOverlay();
+    startDayPhase();
+  }, 5500);
+}
+
+// ── DAY DISCUSSION + VOTE ─────────────────────────────────────
+function startDayPhase() {
+  const fresh = loadGame();
+  gameState = fresh;
+
+  updateNarratorStatusText('Diskussion');
+
+  // Narrate discussion period
+  const discussionTime = 90; // seconds for discussion
+  narratorSay(`☀️ Das Dorf diskutiert. Ihr habt ${discussionTime} Sekunden, um zu beraten. Wer ist der Wolf unter euch?`);
+  addLog(`💬 Diskussionsphase: ${discussionTime} Sekunden.`);
+  saveGame();
+
+  // Show narrator status
+  document.getElementById('narrator-status').style.display = '';
+  document.getElementById('narrator-status-text').textContent = `Diskussion (${discussionTime}s)`;
+
+  // Countdown for discussion
+  let disc = discussionTime;
+  const discInterval = setInterval(() => {
+    disc--;
+    const el = document.getElementById('narrator-status-text');
+    if (el) el.textContent = `Diskussion (${disc}s)`;
+    if (disc <= 30 && disc % 10 === 0) {
+      narratorSay(`⏳ Noch ${disc} Sekunden zum Diskutieren...`);
+      saveGame();
+    }
+    if (disc <= 0) {
+      clearInterval(discInterval);
+      startNarratorVote();
+    }
+  }, 1000);
+}
+
+function startNarratorVote() {
+  const fresh = loadGame();
+  gameState = fresh;
+
+  hasVoted = false;
+  updateNarratorStatusText('Abstimmung');
+
+  narratorSay(`🗳️ Die Abstimmung beginnt! Wer soll heute gelyncht werden? Ihr habt 60 Sekunden.`);
+  addLog(`🗳️ Abstimmung beginnt!`);
+
+  gameState.voteActive = true;
+  gameState.votes = {};
+  gameState.voteDeadline = Date.now() + 60000;
+  saveGame();
+
+  // Show vote panel
+  document.getElementById('vote-panel').style.display = '';
+  startVoteTimer();
+
+  // Auto-end vote when deadline reached (voteTimer already does this, but narrator re-drives)
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    endNarratorVote();
+  }, 62000);
+}
+
+function endNarratorVote() {
+  clearTimeout(narratorTimer);
+  if (voteInterval) clearInterval(voteInterval);
+  if (!gameState.voteActive) return; // already ended
+
+  const fresh = loadGame();
+  gameState = fresh;
+
+  gameState.voteActive = false;
+  document.getElementById('vote-panel').style.display = 'none';
+
+  // Count (with mayor double vote)
+  const counts = {};
+  getAlive().forEach(p => counts[p.id] = 0);
+  Object.entries(gameState.votes || {}).forEach(([voter, target]) => {
+    if (counts[target] !== undefined) counts[target]++;
+    else counts[target] = 1;
+    // Mayor gets extra vote
+    const me2 = gameState.players.find(p => p.id === voter);
+    if (me2?.isMayor && voter !== 'mayor_extra') {
+      if (counts[target] !== undefined) counts[target]++;
+    }
+  });
+
+  let winner = null, maxV = 0;
+  Object.keys(counts).forEach(id => { if (counts[id] > maxV) { maxV = counts[id]; winner = id; } });
+
+  if (winner && maxV > 0) {
+    const killed = gameState.players.find(p => p.id === winner);
+    if (killed && killed.alive) {
+      const roleName = ROLES[killed.role]?.name || '?';
+      handleDeath(killed, 'lynched');
+      addLog(`🗳️ ${killed.name} wurde mit ${maxV} Stimme(n) gelyncht.`);
+      narratorSay(`🗳️ Das Dorf hat gesprochen: ${killed.name} (${roleName}) wird gelyncht! ${maxV} Stimme(n).`);
+
+      showNarratorOverlay(
+        '⚖️',
+        `${killed.name} wurde gelyncht`,
+        `Das Dorf hat ${killed.name} schuldig befunden. Er/Sie war: ${roleName}.`,
+        '',
+        4
+      );
+    } else {
+      narratorSay('🗳️ Die Abstimmung brachte kein Ergebnis.');
+      showNarratorOverlay('🤷', 'Unentschieden', 'Das Dorf konnte sich nicht einigen. Niemand wird heute gelyncht.', '', 3);
+    }
+  } else {
+    narratorSay('🗳️ Zu wenige Stimmen. Niemand wird heute gelyncht.');
+    showNarratorOverlay('🤷', 'Keine Abstimmung', 'Das Dorf schwieg. Niemand wurde heute gelyncht.', '', 3);
+  }
+
+  gameState.votes = {};
+  checkWinCondition();
+  saveGame();
+
+  if (gameState.phase === 'ended') {
+    clearTimeout(narratorTimer);
+    narratorTimer = setTimeout(() => {
+      hideNarratorOverlay();
+      showResult(gameState.winner);
+    }, 4500);
+    return;
+  }
+
+  // Check if new mayor needed
+  if (gameState.needNewMayor) {
+    clearTimeout(narratorTimer);
+    narratorTimer = setTimeout(() => {
+      hideNarratorOverlay();
+      runNewMayorVote();
+    }, 4500);
+    return;
+  }
+
+  // Transition to next night
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    hideNarratorOverlay();
+    gameState.day++;
+    saveGame();
+    beginNight();
+  }, 4500);
+}
+
+// ── NEW MAYOR ELECTION (mid-game) ────────────────────────────
+function runNewMayorVote() {
+  const fresh = loadGame();
+  gameState = fresh;
+  gameState.needNewMayor = false;
+  gameState.phase = 'mayorvote';
+  gameState.votes = {};
+  updateNarratorStatusText('Neue Bürgermeisterwahl');
+
+  narratorSay(`👑 Der Bürgermeister ist gestorben. Das Dorf muss einen neuen wählen!`);
+  addLog(`👑 Neue Bürgermeisterwahl!`);
+  saveGame();
+
+  showNarratorOverlay('👑', 'Neue Bürgermeisterwahl', 'Das Dorf benötigt Führung. Wählt einen neuen Bürgermeister!', '', 0);
+
+  // Show mayor vote UI to all clients via phase change
+  // Give 20 seconds
+  clearTimeout(narratorTimer);
+  narratorTimer = setTimeout(() => {
+    hideNarratorOverlay();
+    autoCountMayorVotes();
+    // After mayor is set, advance day and go to night
+    setTimeout(() => {
+      gameState.day++;
+      saveGame();
+      beginNight();
+    }, 3000);
+  }, 20000);
+}
+
+// ── Narrator status text helper ────────────────────────────────
+function updateNarratorStatusText(text) {
+  const el = document.getElementById('narrator-status-text');
+  if (el) el.textContent = `Erzähler: ${text}`;
+  document.getElementById('narrator-status').style.display = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONNECTION STATUS UI
+// ═══════════════════════════════════════════════════════════
+function showConnectionStatus(msg) {
+  let el = document.getElementById('conn-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'conn-status';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9990;background:var(--deep);border-bottom:1px solid var(--gold);padding:10px 16px;font-family:Cinzel,serif;font-size:0.78rem;color:var(--gold);text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;';
+    el.innerHTML = '<div style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite"></div><span id="conn-status-text"></span>';
+    document.body.appendChild(el);
+  }
+  document.getElementById('conn-status-text').textContent = msg;
+  el.style.display = 'flex';
+}
+
+function hideConnectionStatus() {
+  const el = document.getElementById('conn-status');
+  if (el) el.style.display = 'none';
+}
+
+// ── Share button helper ────────────────────────────────────
+function shareGameCode() {
+  const url = location.href.split('?')[0] + '?code=' + gameCode;
+  if (navigator.share) {
+    navigator.share({ title: '🐺 Werwolf Online', text: 'Spielcode: ' + gameCode, url }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(url).then(() => toast('Link kopiert!', 'green')).catch(() => {
+      toast('Code: ' + gameCode, '');
+    });
+  }
+}
+
+// ── Handle ?code= in URL (deep link) ──────────────────────
+function checkUrlCode() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if (code) {
+    document.getElementById('join-code-input').value = code.toUpperCase();
+    showJoinGame();
+    toast('Code eingefügt: ' + code.toUpperCase(), 'green');
+  }
+}
+
+// ── Firebase disconnect cleanup ────────────────────────────
+window.addEventListener('beforeunload', () => {
+  if (fbUnsubscribe) fbUnsubscribe();
+  // Optionally remove player from lobby on disconnect
+  if (gameState && gameState.phase === 'lobby' && myId) {
+    try {
+      gameState.players = gameState.players.filter(p => p.id !== myId);
+      if (firebaseReady && db) db.ref(fbGamePath()).set(gameState);
+    } catch(e) {}
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+showScreen('screen-landing');
+checkUrlCode();
+
+// Show Firebase connection indicator
+if (firebaseReady) {
+  db.ref('.info/connected').on('value', snap => {
+    const connected = snap.val() === true;
+    const indicator = document.getElementById('firebase-indicator');
+    if (indicator) {
+      indicator.textContent = connected ? '🟢 Online' : '🔴 Offline';
+      indicator.style.color = connected ? '#7dffa0' : '#ff9090';
+    }
+  });
+}
+</script>
+</body>
+</html>
